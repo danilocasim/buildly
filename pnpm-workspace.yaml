@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+  - scripts
+
+# One version per tool across the workspace. Packages reference these with "catalog:".
+catalog:
+  "@types/node": ^22.20.4
+  tsx: ^4.23.15
+  # typescript-eslint supports TypeScript < 6.1; do not move to 7.x until it does.
+  typescript: ~6.0.3
+  vitest: ^5.0.3
+  zod: ^4.6.5

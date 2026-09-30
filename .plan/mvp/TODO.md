@@ -12,25 +12,27 @@ Goal: an empty but fully wired monorepo where every later slice has a home and C
 
 ### Slice 0.1 Workspace scaffold
 
-- [ ] 0.1.1 Init pnpm workspace with `apps/web`, `apps/worker`, and all `packages/*` from ARCHITECTURE.md §1, each with `package.json`, `tsconfig.json` extending a shared strict base, and an empty `src/index.ts`.
+- [x] 0.1.1 Init pnpm workspace with `apps/web`, `apps/worker`, and all `packages/*` from ARCHITECTURE.md §1, each with `package.json`, `tsconfig.json` extending a shared strict base, and an empty `src/index.ts`.
   Verify: `pnpm install && pnpm -r typecheck` exits 0; `pnpm ls -r --depth 0` lists every package.
-- [ ] 0.1.2 Shared tooling: ESLint + Prettier config at root, Vitest config per package, `pnpm test` runs all.
+- [x] 0.1.2 Shared tooling: ESLint + Prettier config at root, Vitest config per package, `pnpm test` runs all.
   Verify: `pnpm lint && pnpm test` exits 0 with at least one placeholder test per package.
-- [ ] 0.1.3 `packages/shared` with zod, event names file, and a `Result<T, E>` helper.
+- [x] 0.1.3 `packages/shared` with zod, event names file, and a `Result<T, E>` helper.
   Verify: unit test imports `events.ts` and asserts names are unique strings.
 
 ### Slice 0.2 Continuous integration
 
-- [ ] 0.2.1 GitHub Actions workflow: install, lint, typecheck, unit tests, on PR and main.
+- [x] 0.2.1 GitHub Actions workflow: install, lint, typecheck, unit tests, on PR and main.
   Verify: open a PR with a deliberate lint error and see the check fail; fix and see it pass.
-- [ ] 0.2.2 Cache pnpm store and `packages/foundation/node_modules` in CI.
+  Verified 2026-09-30 on PR #1: lint-probe run 36722855715 failed at the Lint step (`no-unused-vars` in `packages/db/src/lint-probe.ts`); fix run 36722999362 passed. Push a fix only after the probe run finishes: `cancel-in-progress` cancels the older run on the same branch.
+- [x] 0.2.2 Cache pnpm store and `packages/foundation/node_modules` in CI.
   Verify: second CI run of an unchanged lockfile finishes install in under 60 s (read from the job log).
+  Verified 2026-09-30 on PR #1: run 36721742630 saved both caches; run 36721786854 hit both caches and `pnpm install --frozen-lockfile` finished in 1.1 s.
 
 ### Slice 0.3 Configuration and secrets
 
-- [ ] 0.3.1 `.env.example` listing every variable in ARCHITECTURE.md §9 with placeholder values; zod-validated `loadConfig()` in `packages/shared` used by both apps.
+- [x] 0.3.1 `.env.example` listing every variable in ARCHITECTURE.md §9 with placeholder values; zod-validated `loadConfig()` in `packages/shared` used by both apps.
   Verify: unit test: missing `OPENAI_API_KEY` throws an error naming the variable; a complete env parses.
-- [ ] 0.3.2 Secret-leak guard script `scripts/check-no-secrets.ts` that scans a directory for `OPENAI_API_KEY`, the `sk-` key prefix (including `sk-proj-`), and every env name.
+- [x] 0.3.2 Secret-leak guard script `scripts/check-no-secrets.ts` that scans a directory for `OPENAI_API_KEY`, the `sk-` key prefix (including `sk-proj-`), and every env name.
   Verify: unit test: a fixture dir containing `sk-abc` fails; a clean dir passes.
 
 ---
