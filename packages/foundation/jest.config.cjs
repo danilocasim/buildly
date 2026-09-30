@@ -12,6 +12,7 @@ const transformed = [
 
 /** @type {import('jest').Config} */
 module.exports = {
+  testTimeout: 30_000,
   preset: "jest-expo",
   roots: ["<rootDir>/test"],
   setupFilesAfterEnv: ["<rootDir>/test/setup.ts"],

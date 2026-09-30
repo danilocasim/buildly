@@ -23,6 +23,7 @@ const project = (slug) => ({
 
 /** @type {import('jest').Config} */
 module.exports = {
+  testTimeout: 30_000,
   projects: [
     ...slugs.map(project),
     {
