@@ -49,9 +49,6 @@ catalogs:
     expo:
       specifier: ~54.0.32
       version: 54.0.37
-    expo-constants:
-      specifier: ~18.0.14
-      version: 18.0.14
     expo-status-bar:
       specifier: ~3.0.9
       version: 3.0.9
@@ -219,9 +216,6 @@ importers:
       expo:
         specifier: catalog:foundation
         version: 54.0.37(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
-      expo-constants:
-        specifier: catalog:foundation
-        version: 18.0.14(expo@54.0.37(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3))(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))
       expo-status-bar:
         specifier: catalog:foundation
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -348,9 +342,6 @@ importers:
       expo:
         specifier: catalog:foundation
         version: 54.0.37(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
-      expo-constants:
-        specifier: catalog:foundation
-        version: 18.0.14(expo@54.0.37(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3))(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))
       expo-status-bar:
         specifier: catalog:foundation
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)

@@ -102,7 +102,8 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 - One Snack session per project, created lazily on first successful generation, updated on every snapshot change and on restore.
 - `sdkVersion` is pinned in `packages/foundation/foundation.json` (54.0.0, D17) and must be one the published `snack-sdk` accepts (SPIKES.md S2); `SNACK_SDK_VERSION` must equal it.
 - The worker reads bundle errors from the session's state and normalizes them into the same diagnostic shape the checker uses (`packages/shared/src/diagnostics.ts`). Snack does not report runtime errors (SPIKES.md S1), so the foundation logs each one as a `[buildly:runtime-error] {json}` console line, which the log listener parses with `fromRuntimeLog`.
-- Files sent are the foundation files plus the project files; dependencies are the `foundation.json` allowlist minus `react`, `react-native`, and `expo`, which the runtime provides.
+- Files sent are the foundation files (including `app.json`) plus the project files; dependencies are the `foundation.json` allowlist minus `react`, `react-native`, and `expo`, which the runtime provides.
+- Each project's `app.json` gets a unique `expo.slug` (derived from the project id). Expo Go shares one AsyncStorage between every Snack on a phone, and the store scopes all keys by that slug, so two previews never read each other's data or `schemaVersion`.
 - The web app receives `webPreviewURL` and the online `url` over the project API; the iframe is rendered only with the SDK's web preview reference wiring.
 - Web preview uses Buildly's self-hosted build of the Snack web player (`webPlayerURL`, D18) because Snack's hosted player only talks to Expo's allowlisted origins. It lives on its own registrable domain, since it runs generated code in the user's browser. Expo Go uses Snack directly.
 - Snack sessions never receive secrets. Files sent are exactly the foundation plus project files.

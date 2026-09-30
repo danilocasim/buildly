@@ -32,6 +32,19 @@ const files = {
     ...walk(join(foundationDir, "src/components")),
   ]),
   ...read(starterDir, walk(join(starterDir, "src"))),
+  // A unique slug per app: the store scopes AsyncStorage by it, and Expo Go shares storage
+  // between every Snack on the phone.
+  "app.json": {
+    type: "CODE" as const,
+    contents: JSON.stringify(
+      (() => {
+        const app = JSON.parse(readFileSync(join(foundationDir, "app.json"), "utf8")) as { expo: Record<string, unknown> };
+        return { expo: { ...app.expo, name: slug, slug: `buildly-starter-${slug}` } };
+      })(),
+      null,
+      2,
+    ),
+  },
 };
 const dependencies = Object.fromEntries(
   Object.entries(manifest.dependencies)

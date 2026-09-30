@@ -1,12 +1,9 @@
 const cleanups: (() => void)[] = [];
 
-// app.json → expo.extra.showAttribution, as expo-constants exposes it at runtime.
+// app.json → expo.extra.showAttribution.
 function renderAbout(extra: Record<string, unknown>) {
   jest.resetModules();
-  jest.doMock("expo-constants", () => ({
-    __esModule: true,
-    default: { expoConfig: { name: "Journal", extra } },
-  }));
+  jest.doMock("../app.json", () => ({ expo: { name: "Journal", slug: "journal", extra } }));
   const { AboutScreen } =
     require("../src/components/AboutScreen") as typeof import("../src/components/AboutScreen");
   // Required after resetModules so the renderer and the screen share one React instance.
@@ -19,7 +16,7 @@ function renderAbout(extra: Record<string, unknown>) {
 describe("AboutScreen", () => {
   afterEach(() => {
     cleanups.splice(0).forEach((cleanup) => cleanup());
-    jest.dontMock("expo-constants");
+    jest.dontMock("../app.json");
   });
 
   it("shows the attribution when showAttribution is true", () => {

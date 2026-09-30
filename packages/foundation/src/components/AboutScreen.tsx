@@ -1,18 +1,22 @@
-import Constants from "expo-constants";
 import { Text } from "react-native";
+import appConfig from "../../app.json";
 import { useTheme } from "../theme";
 import { Card } from "./Card";
 import { Screen } from "./Screen";
 
+// app.json is read directly (not through expo-constants) so Snack previews, Expo Go, and
+// exports all see the same file.
+const expo: { name?: string; extra?: { showAttribution?: boolean } } = appConfig.expo;
+
 function attributionEnabled(): boolean {
-  // app.json → expo.extra.showAttribution; true unless the export turns it off (Pro).
-  return Constants.expoConfig?.extra?.showAttribution !== false;
+  // expo.extra.showAttribution: true unless the export turns it off (Pro).
+  return expo.extra?.showAttribution !== false;
 }
 
 /** Foundation-owned About screen; register it in src/navigation.tsx. */
 export function AboutScreen() {
   const t = useTheme();
-  const name = Constants.expoConfig?.name ?? "This app";
+  const name = expo.name ?? "This app";
   return (
     <Screen testID="about-screen">
       <Card>

@@ -19,7 +19,6 @@
     "@react-navigation/native": "catalog:foundation",
     "@react-navigation/native-stack": "catalog:foundation",
     "expo": "catalog:foundation",
-    "expo-constants": "catalog:foundation",
     "expo-status-bar": "catalog:foundation",
     "react": "catalog:foundation",
     "react-native": "catalog:foundation",

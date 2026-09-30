@@ -70,7 +70,7 @@ describe("repository", () => {
     await notes.remove(created.id);
     expect(await notes.get(created.id)).toBeUndefined();
     expect(await notes.list()).toEqual([]);
-    expect(JSON.parse((await storage.getItem("buildly:collection:notes"))!)).toEqual([]);
+    expect(JSON.parse((await storage.getItem("buildly:my-app:collection:notes"))!)).toEqual([]);
   });
 
   it("persists across a restart (one AsyncStorage key per collection)", async () => {
@@ -172,11 +172,42 @@ describe("openStore and schemaVersion", () => {
     );
     await store.openStore({ schemaVersion: 1, seed: async () => {} });
     await tags.create(note("old"));
-    expect(await storage.getItem("buildly:collection:tags")).not.toBeNull();
+    expect(await storage.getItem("buildly:my-app:collection:tags")).not.toBeNull();
 
     const after = restart(); // the new build has no "tags" collection
     await after.store.openStore({ schemaVersion: 2, seed: async () => {} });
-    expect(await after.storage.getItem("buildly:collection:tags")).toBeNull();
+    expect(await after.storage.getItem("buildly:my-app:collection:tags")).toBeNull();
+  });
+});
+
+describe("per-app storage namespace", () => {
+  it("keeps two apps on one device apart (Expo Go shares AsyncStorage between Snacks)", async () => {
+    const appA = freshStore();
+    await appA.store.openStore({
+      schemaVersion: 1,
+      seed: async () => void (await appA.notes.create(note("A demo"))),
+    });
+    const shared = { ...appA.storage.__INTERNAL_MOCK_STORAGE__ };
+
+    // A second app with another slug on the same device: same storage, fresh modules.
+    jest.resetModules();
+    jest.doMock("../app.json", () => ({ expo: { slug: "other-app" } }));
+    const appB = load();
+    Object.assign(appB.storage.__INTERNAL_MOCK_STORAGE__, shared);
+    const seeded = await appB.store.openStore({
+      schemaVersion: 1,
+      seed: async () => void (await appB.notes.create(note("B demo"))),
+    });
+    jest.dontMock("../app.json");
+
+    expect(seeded).toEqual({ didReseed: false });
+    expect((await appB.notes.list()).map((n) => n.title)).toEqual(["B demo"]);
+    expect(Object.keys(appB.storage.__INTERNAL_MOCK_STORAGE__).sort()).toEqual([
+      "buildly:my-app:collection:notes",
+      "buildly:my-app:schemaVersion",
+      "buildly:other-app:collection:notes",
+      "buildly:other-app:schemaVersion",
+    ]);
   });
 });
 

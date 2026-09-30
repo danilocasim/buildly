@@ -4,6 +4,7 @@
 // AsyncStorage directly.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
+import appConfig from "../../app.json";
 
 export interface BaseRecord {
   id: string;
@@ -35,8 +36,12 @@ export interface Repository<T extends BaseRecord> {
   subscribe(listener: () => void): () => void;
 }
 
-const KEY_PREFIX = "buildly:collection:";
-const VERSION_KEY = "buildly:schemaVersion";
+// Expo Go shares one AsyncStorage between every Snack a phone opens, so every key is
+// scoped by the app's slug; without it, one project's data and schemaVersion leak into
+// another's preview.
+const NAMESPACE = `buildly:${appConfig.expo.slug}:`;
+const KEY_PREFIX = `${NAMESPACE}collection:`;
+const VERSION_KEY = `${NAMESPACE}schemaVersion`;
 
 interface InternalRepository {
   clearCache(): void;

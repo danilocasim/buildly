@@ -26,7 +26,6 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:foundation",
     "expo": "catalog:foundation",
-    "expo-constants": "catalog:foundation",
     "expo-status-bar": "catalog:foundation",
     "jest": "catalog:foundation",
     "jest-expo": "catalog:foundation",

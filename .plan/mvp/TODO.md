@@ -76,7 +76,7 @@ Goal: the one Expo foundation every generated app is built on, three starters as
   Verified 2026-09-30: `test/components.test.tsx` covers render, press/changeText, and disabled for all seven.
 - [x] 2.1.4 About screen with a "Made with Buildly" line controlled by `app.json` extra `showAttribution` (true by default; Phase 6 export toggles it for Pro).
   Verify: RNTL test: attribution visible when flag true, absent when false.
-  Verified 2026-09-30: `test/about.test.tsx` (flag true, default, false). `AboutScreen` reads `app.json` via `expo-constants`, added to the allowlist (SPIKES.md S2 note).
+  Verified 2026-09-30: `test/about.test.tsx` (flag true, default, false). `AboutScreen` imports `app.json` directly (Snack loads JSON files as modules), so previews and exports read the same flag.
 
 ### Slice 2.2 Typed document store
 
@@ -119,8 +119,9 @@ Goal: the one Expo foundation every generated app is built on, three starters as
 - [x] 2.4.4 Starter manifest `starters.json` (slug, name, description, thumbnail path, screen names) consumed by the web app.
   Verify: unit test: every slug has a directory, a thumbnail file, and a passing smoke test entry.
   Verified 2026-09-30: `packages/starters/starters.json` validated by `starterManifestSchema`; `test/manifest.test.ts` checks each directory, thumbnail PNG (rendered from the real app on web, see `thumbnails/README.md`), smoke test, and registered screens.
-- [ ] 2.4.5 Each starter runs in Snack on web and Expo Go.
+- [~] 2.4.5 Each starter runs in Snack on web and Expo Go.
   Verify: **manual** using the S1 spike page pointed at each starter; note date and devices here.
+  Status 2026-10-01: **Expo Go passes** for all three on Android (model 2412DPC0AG, store Expo Go): Journal (create, persist), Habit Tracker (check in, streak 2 → 3, History), Inventory (−2 → 22, search "hdmi"); no runtime errors. Sessions came from `spikes/snack-sdk-check/online.ts` (same files as the spike page). The first run found that Expo Go shares AsyncStorage across Snacks, so the store now scopes keys by `app.json` `expo.slug`. **Snack web is blocked** by the hosted player's origin allowlist (SPIKES.md S1) until the self-hosted player (4b.0.1); each starter already renders on web via `expo export` (thumbnails). iPhone not tested.
 
 ### Slice 2.5 Checker
 

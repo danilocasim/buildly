@@ -1,5 +1,5 @@
 {
-  "$comment": "The contract every generated app follows (ARCHITECTURE.md §4). Validated by foundationManifestSchema in packages/shared.",
+  "$comment": "The contract every generated app follows (ARCHITECTURE.md \u00a74). Validated by foundationManifestSchema in packages/shared.",
   "sdkVersion": "54.0.0",
   "resolvedWith": {
     "spike": "SPIKES.md S2",
@@ -13,7 +13,6 @@
     "@react-navigation/native": "7.5.0",
     "@react-navigation/native-stack": "7.20.0",
     "expo": "~54.0.32",
-    "expo-constants": "~18.0.14",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-native": "0.81.5",
