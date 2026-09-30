@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Buildly is an AI mobile app builder: a user describes an app or picks a starter, the AI generates a React Native + Expo + TypeScript project, the user previews it in the browser and in Expo Go, refines it in chat, and exports the source.
 
-**The repo is pre-implementation.** It contains only planning documents and a static design mockup. None of the product packages (`apps/*`, `packages/*`) exist yet; they are created by TODO Phase 0.
+**The repo is early in implementation.** TODO Phase 0 has scaffolded the pnpm workspace: every `apps/*` and `packages/*` package exists, but only `packages/shared` (events, `Result`, `loadConfig`) and `scripts/check-no-secrets.ts` have real code. The rest are empty placeholders until their phase.
 
 | Path | Role |
 | --- | --- |
@@ -69,14 +69,30 @@ These are from ARCHITECTURE.md and the brief. Details live there. What follows a
 
 **Hosting** (HOSTING.md): Railway (web, worker, Postgres) and AWS S3 in Singapore; MinIO locally. `STORAGE_ENDPOINT` is empty for real S3.
 
-## Planned commands (not yet available)
+## Workspace commands
 
-TODO Phase 0 introduces these at the repo root. Verify lines reference them, but they will fail until Phase 0 is done:
+Run from the repo root (Node 22, pnpm 9):
 
 ```bash
-pnpm install && pnpm -r typecheck
-pnpm lint && pnpm test                 # Vitest across packages
-pnpm --filter foundation test          # one package
+pnpm install && pnpm typecheck         # tsc --noEmit in every package
+pnpm lint                              # ESLint (type-aware) + prettier --check
+pnpm format                            # prettier --write
+pnpm test                              # Vitest in every package
+pnpm --filter foundation test          # one package (scope optional: @buildly/foundation)
+pnpm --filter shared exec vitest run src/config.test.ts   # one test file
+pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
+```
+
+- Packages are `@buildly/<dir>`, export `src/index.ts` directly, and pin shared tool versions through the `catalog:` in `pnpm-workspace.yaml`.
+- TypeScript stays on 6.0.x: typescript-eslint does not support 7 yet.
+- Server env is read only through `loadConfig('web' | 'worker')` from `@buildly/shared/config`, never the `@buildly/shared` root, so env names stay out of client bundles.
+- `.env.example` and `.plan/mvp/METRICS.md` are test fixtures: the shared tests fail if the env schema or the event list drifts from them.
+
+## Planned commands (not yet available)
+
+Later phases add these. Verify lines reference them, but they fail until their phase is done:
+
+```bash
 pnpm db:migrate / db:migrate:down / db:seed
 pnpm test --tag snack                  # live Snack integration tests (skipped in CI)
 pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all --runs N

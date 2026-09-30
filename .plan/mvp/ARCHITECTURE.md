@@ -20,11 +20,12 @@ buildly/
     snack/               Thin wrapper over snack-sdk: session create/update, errors, online URL
     exporter/            Builds the export ZIP (foundation + project files + README)
     eval/                Evaluation harness and task set (see EVAL.md)
+  scripts/               Repo tooling as a workspace package (@buildly/scripts), e.g. check-no-secrets.ts
   docs/                  Product brief
   .plan/                 This plan
 ```
 
-Package manager: pnpm. Node 22 LTS. TypeScript strict everywhere. Tests: Vitest for unit and integration, Playwright for web e2e, React Native Testing Library for foundation and starter smoke tests.
+Package manager: pnpm (versions pinned once in the `catalog:` of `pnpm-workspace.yaml`). Node 22 LTS. TypeScript strict everywhere, every package extending `tsconfig.base.json`; TypeScript stays on 6.0.x until typescript-eslint supports 7. Packages are named `@buildly/<dir>` and export their TypeScript source directly (no build step for internal packages). Tests: Vitest for unit and integration, Playwright for web e2e, React Native Testing Library for foundation and starter smoke tests.
 
 ## 2. Data model (Postgres)
 
@@ -126,7 +127,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 
 ## 9. Environment variables
 
-Documented in `.env.example`; validated with zod at startup in both apps. Which service receives which variable is in [`HOSTING.md`](HOSTING.md) §4.
+Documented in `.env.example`; validated with zod at startup in both apps by `loadConfig('web' | 'worker', env)` from `@buildly/shared/config`, which checks only the variables that service receives. The config entry point is separate from `@buildly/shared` so env names never reach a client bundle, where the secret guard (`scripts/check-no-secrets.ts`) would flag them. Which service receives which variable is in [`HOSTING.md`](HOSTING.md) §4.
 
 ```
 DATABASE_URL
@@ -138,7 +139,7 @@ EMAIL_PROVIDER_API_KEY, EMAIL_FROM
 SESSION_SECRET
 APP_URL
 SNACK_SDK_VERSION
-SENTRY_DSN
+SENTRY_DSN                  optional: empty disables Sentry (local development)
 ```
 
 ## 10. Hosting
