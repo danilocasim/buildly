@@ -46,7 +46,7 @@ Goal: retire the unknowns before building on them. Details and pass criteria in 
   Verified 2026-09-30: SDK 54.0.0 pinned (D17); all eight dependencies resolve in Snack; an SDK 54 Snack opens in current store Expo Go on iOS and Android.
 - [~] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
   Verify: SPIKES.md S1 result recorded with browser and device matrix; DECISIONS.md P1 resolved.
-  Status 2026-09-30: web preview fails outside Expo's origin allowlist (SPIKES.md S1); Expo Go device run and the P1 choice are open.
+  Status 2026-09-30: web preview fails outside Expo's origin allowlist (SPIKES.md S1); P1 resolved as D18 (self-hosted web player); the Expo Go device run is open.
 - [ ] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.
   Verify: SPIKES.md S3 result recorded with token counts and cost per run; `packages/generator/src/rates.ts` created from the published rates.
   Status 2026-09-30: `rates.ts` created from the published Standard rates; `spikes/openai-smoke` (`pnpm smoke`) is ready and waits on an OpenAI key.
@@ -243,24 +243,24 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ## Phase 4b — Fallback web runner
 
-Goal: a web preview Buildly controls, because Snack's hosted web player refuses non-allowlisted origins (SPIKES.md S1). Expo Go previews stay on Snack. Which slice runs first depends on DECISIONS.md P1.
+Goal: a web preview Buildly controls, because Snack's hosted web player refuses non-allowlisted origins (SPIKES.md S1). Expo Go previews stay on Snack. D18 picks slice 4b.0; slices 4b.1–4b.3 are the fallback if 4b.0 cannot be built or kept current.
 
-### Slice 4b.0 Self-hosted Snack web player (lightest option, if P1 picks it)
+### Slice 4b.0 Self-hosted Snack web player (chosen, D18)
 
-- [ ] 4b.0.1 Build the open-source Snack web player (expo/snack `runtime`, web target) for the pinned SDK with Buildly's preview origins added to `allowedOrigins`; host it on an isolated origin; pass it as `webPlayerURL`.
+- [ ] 4b.0.1 Build the open-source Snack web player (expo/snack `runtime`, web target) for the pinned SDK with Buildly's preview origins added to `allowedOrigins`; host it on its own registrable domain (never the app's), no cookies; pass it as `webPlayerURL`. Document the per-SDK rebuild.
   Verify: the S1 spike page on the staging domain renders the journal starter through the self-hosted player; a page on another origin gets no messages.
 
-### Slice 4b.1 Runner container image
+### Slice 4b.1 Runner container image (fallback)
 
 - [ ] 4b.1.1 Container image with Node 22 and the pre-baked foundation `node_modules` (shared with TODO 2.5.3) that takes a snapshot's files as input and produces a static web build; no network access during the build; CPU, memory, and 120 s time limits.
   Verify: `docker run` with the journal starter snapshot outputs `dist/index.html` within the time limit; a build that tries to reach the network fails.
 
-### Slice 4b.2 `expo export --platform web`
+### Slice 4b.2 `expo export --platform web` (fallback)
 
 - [ ] 4b.2.1 Worker `bundling` step for web runs `npx expo export --platform web` inside the runner container on the assembled project and maps Metro errors to the normalized diagnostic shape (TODO 2.5.2).
   Verify: integration test: journal starter → export succeeds; an injected syntax error → one diagnostic with file and line; the build never runs npm scripts from the project.
 
-### Slice 4b.3 Isolated-origin static hosting
+### Slice 4b.3 Isolated-origin static hosting (fallback)
 
 - [ ] 4b.3.1 Upload each export to storage under `previews/{projectId}/{snapshotId}/` and serve it from a dedicated preview origin (separate registrable domain, no cookies, strict CSP) that the workspace iframe loads with `sandbox="allow-scripts"`.
   Verify: e2e: the workspace iframe renders the export; the preview origin cannot read the app's cookies or call its API (checked with a fixture that tries).
@@ -291,8 +291,8 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.3 Preview panel
 
-- [ ] 5.3.1 Snack web player iframe inside a phone frame, wired through the SDK web preview reference; CSP `frame-src` limited to Snack origins; label "Web preview".
-  Verify: e2e (tagged `@snack`): iframe `src` equals the session `webPreviewURL`; a non-Snack `src` is blocked by CSP (checked via console error).
+- [ ] 5.3.1 Web player iframe (the self-hosted player from 4b.0.1, D18) inside a phone frame, wired through the SDK web preview reference; CSP `frame-src` limited to the player origin; label "Web preview".
+  Verify: e2e (tagged `@snack`): iframe `src` equals the session `webPreviewURL` on the player origin; any other `src` is blocked by CSP (checked via console error).
 - [ ] 5.3.2 Two viewport presets (small and large phone), build status chip, Refresh, Reset demo data (posts a message the foundation listens for, or reloads with a `reset=1` param).
   Verify: e2e: preset toggles the frame dimensions; Reset triggers `preview.reset_demo_data` event; **manual**: demo pill reappears after reset.
 - [ ] 5.3.3 Browser and phone verification shown separately: "Web: bundled ✓ / Phone: not verified" until the user opens the QR modal.
@@ -377,7 +377,7 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 - [ ] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
   Verify: CI step passes; injecting `process.env.OPENAI_API_KEY` into a client component fails the build.
-- [ ] 7.2.2 Security headers: CSP with Snack `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
+- [ ] 7.2.2 Security headers: CSP with the web player origin as the only `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
   Verify: integration test asserts headers on `/` and the workspace route.
 - [ ] 7.2.3 Rate limit on magic-link requests (5 per email per hour) and on API routes by session.
   Verify: integration test: 6th request → 429.
@@ -430,7 +430,7 @@ Check each only with the evidence named.
   Verify: ten `invites` rows accepted.
 - [ ] 9.2.2 Feedback capture: an in-app "Report a problem" link that attaches `generation_id`, plus a weekly 20-minute call with three users.
   Verify: at least one report received through the link.
-- [ ] 9.2.3 Weekly metrics review against brief §1 targets for two weeks; write `reports/beta-review.md` with a go/no-go on investing in the fallback runner, billing, and public launch.
+- [ ] 9.2.3 Weekly metrics review against brief §1 targets for two weeks; write `reports/beta-review.md` with a go/no-go on investing in the `expo export` fallback runner, billing, and public launch.
   Verify: the review file exists and names a decision.
 
 ---

@@ -1,6 +1,6 @@
 // SPIKES.md S3: OpenAI tool calling and cost smoke.
 //
-//   OPENAI_API_KEY in the environment or in ./.env (gitignored), then:
+//   OPENAI_API_KEY in the environment, ./.env, or the repo-root .env (both gitignored), then:
 //   pnpm smoke [--models gpt-6.1-sol,gpt-5.3-codex,gpt-6-luna] [--runs 5]
 //              [--edit-model gpt-6-luna] [--edit-runs 1]
 //
@@ -17,10 +17,13 @@ import type { FunctionTool, ResponseInputItem, ResponseUsage } from "openai/reso
 import { RATES, RATES_SOURCE, type RatedModel } from "../../packages/generator/src/rates";
 
 const here = dirname(fileURLToPath(import.meta.url));
-try {
-  process.loadEnvFile(join(here, ".env"));
-} catch {
-  // No .env; rely on the environment.
+// The spike's own .env wins; the repo-root .env (gitignored) is the fallback.
+for (const file of [join(here, ".env"), join(here, "../../.env")]) {
+  try {
+    process.loadEnvFile(file);
+  } catch {
+    // Missing file; rely on the environment.
+  }
 }
 
 const args = Object.fromEntries(
@@ -375,7 +378,7 @@ function typecheck(files: Record<string, string>): RunResult["typecheck"] {
 // ---------- Main ----------
 
 if (!process.env.OPENAI_API_KEY) {
-  console.error("OPENAI_API_KEY is not set (environment or spikes/openai-smoke/.env).");
+  console.error("OPENAI_API_KEY is not set (environment, spikes/openai-smoke/.env, or the repo-root .env).");
   process.exit(2);
 }
 const client = new OpenAI({ maxRetries: 3 });

@@ -339,7 +339,7 @@ Team plans, seats, an enterprise tier, usage-based token billing, and a marketpl
 
 | Risk | Mitigation |
 | --- | --- |
-| Snack web preview fails on the production domain | Week-1 spike; fallback runner for web only |
+| Snack web preview fails on the production domain | Confirmed by the week-1 spike (Expo's player is origin-locked); self-host the open-source player (D18), fallback runner for web only |
 | Snack availability or policy changes | Export never depends on Snack; fallback runner documented |
 | Model output quality on React Native | Fixed harness, strict foundation allowlist, small component kit that constrains the solution space |
 | Snack SDK version lag blocks a needed Expo feature | Pin the foundation; treat SDK upgrades as a planned task |
@@ -350,7 +350,7 @@ Team plans, seats, an enterprise tier, usage-based token billing, and a marketpl
 ## 16. Open decisions
 
 1. Whether a Starters page is needed beyond the Home cards.
-2. Snack web preview versus fallback runner, decided by the week-1 spike.
+2. Snack web preview versus fallback runner, decided by the week-1 spike: self-hosted Snack web player, with the runner as fallback (D18).
 3. Which OpenAI model serves plans and which serves edits, decided by the evaluation harness.
 4. Pro build cap or price if model routing cannot hold the blended cost near $0.04 per build.
 
