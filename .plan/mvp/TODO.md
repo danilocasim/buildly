@@ -89,8 +89,9 @@ Goal: the one Expo foundation every generated app is built on, three starters as
 - [x] 2.2.3 `reset()` and `seed.ts` conventions; demo records carry `isDemo: true` and the UI shows a "Demo data" pill on Home tabs while any demo record exists.
   Verify: unit test: after `reset()` only demo records exist; RNTL test: pill visible with demo data, hidden after all demo records are removed.
   Verified 2026-09-30: after `reset()` only demo records remain; `DemoDataPill` shows with demo data and hides once they are removed.
-- [ ] 2.2.4 Persistence on device (manual until Detox exists).
+- [x] 2.2.4 Persistence on device (manual until Detox exists).
   Verify: **manual** in Expo Go: create a record, force-quit, reopen, record is present. Record device and date in this line.
+  Verified 2026-10-01: Journal starter on the foundation in store Expo Go, Android (model 2412DPC0AG): created "Device test", force-quit, reopened, entry present; no runtime errors reported. iPhone not tested.
 
 ### Slice 2.3 Foundation contract
 
