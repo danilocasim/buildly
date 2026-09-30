@@ -80,7 +80,40 @@ Steps:
 
 Pass criteria: tool calls parse on the first try in at least 4 of 5 runs per model; usage reports cached tokens; an initial build costs under $0.20 on the flagship; the small-model edit costs under $0.02.
 
-Result: _pending_
+Result (2026-09-30): **pass on every criterion.** Code: `spikes/openai-smoke/` (`pnpm smoke`, key from the gitignored repo-root `.env`); raw output `results/2026-09-30T14-56-58-636Z.json`; rates from `packages/generator/src/rates.ts` (Standard tier, short context, retrieved 2026-09-30). Total spend $0.69.
+
+- Setup: Responses API through the official `openai` SDK 7.25.0, streaming, the five tools from ARCHITECTURE.md §4 as strict function schemas, `previous_response_id` between turns, a fixed `prompt_cache_key`. Server-side path, layout, size, and import validation as in §4. The prompt asks for a two-screen recipe app on a hand-written foundation API digest (the S4 fixture's theme, components, and store stand in for the foundation). Each result is assembled with the foundation files and type-checked with the S4 pre-baked `node_modules`. The follow-up edit ("add a Favorites tab") runs on `gpt-6-luna` from the first flagship result.
+- Criteria:
+  - Tool calls parse on the first try in at least 4 of 5 runs per model: **5 of 5 for all three models** (0 JSON errors in 248 tool calls).
+  - Usage reports cached tokens: **yes**; `input_tokens_details.cached_tokens` and `cache_write_tokens` are both present, so `costFor` (TODO 4.1.2) can be exact. `gpt-5.3-codex` reports 0 cache writes, matching its price sheet (no cache-write price).
+  - Flagship initial build under $0.20: **mean $0.084, max $0.096**.
+  - Small-model edit under $0.02: **$0.0029**.
+- Per run:
+
+  | Kind | Model | Run | Turns | Tool calls | JSON errors | Rejections | Input | Cached | Cache writes | Output | Cost | Wall | `tsc` |
+  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | initial | `gpt-6.1-sol` | 1 | 5 | 15 | 0 | 0 | 21,842 | 10,352 | 9,814 | 6,746 | $0.0964 | 127 s | ok |
+  | initial | `gpt-6.1-sol` | 2 | 7 | 17 | 0 | 1 | 36,262 | 27,996 | 6,584 | 6,775 | $0.0904 | 129 s | ok |
+  | initial | `gpt-6.1-sol` | 3 | 7 | 16 | 0 | 1 | 29,438 | 19,302 | 8,454 | 5,345 | $0.0799 | 91 s | ok |
+  | initial | `gpt-6.1-sol` | 4 | 6 | 16 | 0 | 1 | 24,577 | 16,906 | 5,992 | 6,210 | $0.0821 | 113 s | ok |
+  | initial | `gpt-6.1-sol` | 5 | 6 | 16 | 0 | 1 | 25,630 | 18,883 | 5,068 | 5,256 | $0.0705 | 87 s | ok |
+  | initial | `gpt-5.3-codex` | 1 | 3 | 13 | 0 | 0 | 9,588 | 2,560 | 0 | 2,745 | $0.0512 | 30 s | 1 err |
+  | initial | `gpt-5.3-codex` | 2 | 3 | 13 | 0 | 0 | 9,382 | 5,120 | 0 | 2,565 | $0.0443 | 28 s | 2 err |
+  | initial | `gpt-5.3-codex` | 3 | 3 | 13 | 0 | 0 | 9,679 | 5,120 | 0 | 2,860 | $0.0489 | 31 s | 1 err |
+  | initial | `gpt-5.3-codex` | 4 | 3 | 13 | 0 | 0 | 9,441 | 5,120 | 0 | 2,607 | $0.0450 | 28 s | 1 err |
+  | initial | `gpt-5.3-codex` | 5 | 3 | 13 | 0 | 0 | 9,717 | 5,120 | 0 | 2,914 | $0.0497 | 32 s | 1 err |
+  | initial | `gpt-6-luna` | 1 | 13 | 24 | 0 | 0 | 106,082 | 86,969 | 17,413 | 11,677 | $0.0091 | 99 s | ok |
+  | initial | `gpt-6-luna` | 2 | 5 | 16 | 0 | 0 | 22,042 | 10,991 | 9,375 | 6,459 | $0.0047 | 53 s | ok |
+  | initial | `gpt-6-luna` | 3 | 12 | 19 | 0 | 0 | 84,000 | 68,631 | 14,526 | 9,603 | $0.0074 | 88 s | ok |
+  | initial | `gpt-6-luna` | 4 | 9 | 16 | 0 | 0 | 37,626 | 28,112 | 7,826 | 4,931 | $0.0039 | 48 s | ok |
+  | initial | `gpt-6-luna` | 5 | 10 | 16 | 0 | 0 | 43,383 | 35,223 | 6,469 | 6,592 | $0.0046 | 61 s | ok |
+  | edit | `gpt-6-luna` | 1 | 5 | 12 | 0 | 0 | 30,198 | 17,963 | 10,636 | 2,463 | $0.0029 | 23 s | ok |
+
+- Observations for later phases (not pass criteria):
+  - `gpt-6-luna` passed `tsc` on all 5 initial builds and the edit at about 1/14 of the flagship's cost (mean $0.006), with more turns (mean 9.8). Early signal for P3 and P5; EVAL.md E1 decides.
+  - `gpt-5.3-codex` was fastest (3 turns, 30 s) but failed `tsc` in 5 of 5 runs, always on React Navigation screen typing in `src/navigation.tsx`; it never read the foundation files. Every build would need a repair round.
+  - The flagship's 4 rejections were all `read_file` on files that did not exist yet (probing before creating). TODO 4.2.2 should answer those as "not found" without spending the rejection budget.
+  - Caveats: one small prompt, no repair loop, and a hand-written digest; real starters and edits will cost more. Treat these as lower bounds.
 
 ## S4. Checker speed with pre-baked node_modules (gates Phase 2 slice 2.5)
 

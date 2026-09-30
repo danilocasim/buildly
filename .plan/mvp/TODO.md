@@ -47,9 +47,9 @@ Goal: retire the unknowns before building on them. Details and pass criteria in 
 - [x] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
   Verify: SPIKES.md S1 result recorded with browser and device matrix; DECISIONS.md P1 resolved.
   Verified 2026-09-30: web preview fails outside Expo's origin allowlist, resolved as D18 (self-hosted player); Expo Go opens, renders, and persists on Android; iOS persistence is left to 2.2.4; runtime errors do not reach the SDK (see 2.1.1).
-- [ ] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.
+- [x] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.
   Verify: SPIKES.md S3 result recorded with token counts and cost per run; `packages/generator/src/rates.ts` created from the published rates.
-  Status 2026-09-30: `rates.ts` created from the published Standard rates; `spikes/openai-smoke` (`pnpm smoke`) is ready and waits on an OpenAI key.
+  Verified 2026-09-30: 5 runs per model plus one edit, all criteria met (flagship initial mean $0.084, small-model edit $0.0029, 0 JSON errors, cached tokens reported); `rates.ts` from the published Standard rates.
 - [x] 1.4 S4 Checker speed with pre-baked `node_modules`.
   Verify: SPIKES.md S4 result recorded; warm check under 15 s.
   Verified 2026-09-30: warm check 1.8 s (arm64) and 3.4 s (emulated amd64) in a 1 vCPU / 2 GB container.
@@ -189,7 +189,7 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 - [ ] 4.2.1 In-memory `ProjectFiles` with `list/read/write/delete` and a change log.
   Verify: unit tests: write then read; delete then list; change log records every mutation.
-- [ ] 4.2.2 Validation per ARCHITECTURE.md §4: layout globs, forbidden files, path traversal, 64 KB cap, import allowlist scan, rejection budget of 10.
+- [ ] 4.2.2 Validation per ARCHITECTURE.md §4: layout globs, forbidden files, path traversal, 64 KB cap, import allowlist scan, rejection budget of 10; a `read_file` of a missing project file returns "not found" without spending the budget (SPIKES.md S3).
   Verify: unit tests: `../secrets`, `package.json`, `src/data/store.ts`, an import of `react-native-maps`, a 65 KB file → each rejected with a distinct reason; 11th rejection fails the run.
 - [ ] 4.2.3 `finish` tool captures `summary` and `screens[]`; screens validated against files that register a route.
   Verify: unit test: a screen name without a matching route file is dropped with a warning.
