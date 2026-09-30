@@ -1,0 +1,24 @@
+{
+  "name": "spike-snack-embed",
+  "private": true,
+  "description": "SPIKES.md S1: Snack web preview and Expo Go from a non-localhost origin.",
+  "scripts": {
+    "dev": "next dev --port 3200",
+    "build": "next build",
+    "start": "next start --port 3200"
+  },
+  "dependencies": {
+    "next": "16.3.7",
+    "qrcode": "1.5.4",
+    "react": "19.2",
+    "react-dom": "19.2",
+    "snack-sdk": "6.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "22",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "typescript": "6.0.3"
+  }
+}

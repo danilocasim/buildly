@@ -44,14 +44,18 @@ Goal: retire the unknowns before building on them. Details and pass criteria in 
 - [x] 1.1 S2 Snack SDK version and dependency allowlist check.
   Verify: SPIKES.md S2 result recorded; `foundation.json` has `sdkVersion` and resolved versions; DECISIONS.md P2 resolved.
   Verified 2026-09-30: SDK 54.0.0 pinned (D17); all eight dependencies resolve in Snack; an SDK 54 Snack opens in current store Expo Go on iOS and Android.
-- [ ] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
+- [~] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
   Verify: SPIKES.md S1 result recorded with browser and device matrix; DECISIONS.md P1 resolved.
+  Status 2026-09-30: web preview fails outside Expo's origin allowlist (SPIKES.md S1); Expo Go device run and the P1 choice are open.
 - [ ] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.
   Verify: SPIKES.md S3 result recorded with token counts and cost per run; `packages/generator/src/rates.ts` created from the published rates.
-- [ ] 1.4 S4 Checker speed with pre-baked `node_modules`.
+  Status 2026-09-30: `rates.ts` created from the published Standard rates; `spikes/openai-smoke` (`pnpm smoke`) is ready and waits on an OpenAI key.
+- [x] 1.4 S4 Checker speed with pre-baked `node_modules`.
   Verify: SPIKES.md S4 result recorded; warm check under 15 s.
-- [ ] 1.5 If S1 failed for web: add a "Phase 4b fallback web runner" section to this file with slices for the container image, `expo export --platform web`, and isolated-origin static hosting.
+  Verified 2026-09-30: warm check 1.8 s (arm64) and 3.4 s (emulated amd64) in a 1 vCPU / 2 GB container.
+- [x] 1.5 If S1 failed for web: add a "Phase 4b fallback web runner" section to this file with slices for the container image, `expo export --platform web`, and isolated-origin static hosting.
   Verify: section exists or S1 passed.
+  Verified 2026-09-30: S1 failed for web; Phase 4b added below Phase 4.
 
 ---
 
@@ -234,6 +238,32 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
   Verify: run on the dry-run JSON; table renders with threshold columns.
 - [ ] 4.7.4 Nightly CI job running `--tasks smoke` against the configured model with the real API key, posting the JSON to storage.
   Verify: one nightly run visible in Actions with an uploaded artifact.
+
+---
+
+## Phase 4b — Fallback web runner
+
+Goal: a web preview Buildly controls, because Snack's hosted web player refuses non-allowlisted origins (SPIKES.md S1). Expo Go previews stay on Snack. Which slice runs first depends on DECISIONS.md P1.
+
+### Slice 4b.0 Self-hosted Snack web player (lightest option, if P1 picks it)
+
+- [ ] 4b.0.1 Build the open-source Snack web player (expo/snack `runtime`, web target) for the pinned SDK with Buildly's preview origins added to `allowedOrigins`; host it on an isolated origin; pass it as `webPlayerURL`.
+  Verify: the S1 spike page on the staging domain renders the journal starter through the self-hosted player; a page on another origin gets no messages.
+
+### Slice 4b.1 Runner container image
+
+- [ ] 4b.1.1 Container image with Node 22 and the pre-baked foundation `node_modules` (shared with TODO 2.5.3) that takes a snapshot's files as input and produces a static web build; no network access during the build; CPU, memory, and 120 s time limits.
+  Verify: `docker run` with the journal starter snapshot outputs `dist/index.html` within the time limit; a build that tries to reach the network fails.
+
+### Slice 4b.2 `expo export --platform web`
+
+- [ ] 4b.2.1 Worker `bundling` step for web runs `npx expo export --platform web` inside the runner container on the assembled project and maps Metro errors to the normalized diagnostic shape (TODO 2.5.2).
+  Verify: integration test: journal starter → export succeeds; an injected syntax error → one diagnostic with file and line; the build never runs npm scripts from the project.
+
+### Slice 4b.3 Isolated-origin static hosting
+
+- [ ] 4b.3.1 Upload each export to storage under `previews/{projectId}/{snapshotId}/` and serve it from a dedicated preview origin (separate registrable domain, no cookies, strict CSP) that the workspace iframe loads with `sandbox="allow-scripts"`.
+  Verify: e2e: the workspace iframe renders the export; the preview origin cannot read the app's cookies or call its API (checked with a fixture that tries).
 
 ---
 

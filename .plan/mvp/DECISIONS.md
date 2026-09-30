@@ -26,7 +26,7 @@ Newest at the bottom. A decision is one line of what, one of why, and what would
 
 | # | Question | Gate | Options |
 | --- | --- | --- | --- |
-| P1 | Snack web preview iframe on a non-localhost domain | SPIKES.md S1 | Keep Snack for web; or fallback runner for web with Snack for phone |
+| P1 | How to serve web preview: Snack's hosted web player refuses every origin not on Expo's hardcoded allowlist (SPIKES.md S1) | Founder, after the S1 device run | Ask Expo to allowlist Buildly's origins; self-host the open-source Snack web player with Buildly's origin allowed (`webPlayerURL`); or the `expo export` fallback runner (TODO Phase 4b). Snack stays for Expo Go in every option |
 | P3 | Which OpenAI model for plans and which for edits | EVAL.md run E1 | Plan: `gpt-6.1-sol` or `gpt-5.3-codex`. Edit: `gpt-6-luna`, or the plan model if the small one misses H2 |
 | P5 | Pro build cap or price if routing cannot hold blended cost near $0.04 | EVAL.md run E1 | Keep 200 builds at $12; lower Pro to 80 builds; raise Pro price |
 | P4 | Whether a Starters page is needed beyond Home cards | Beta feedback | Reserve the route; ship only Home cards |

@@ -25,7 +25,12 @@ Pass criteria (all required):
 
 Fail handling: record the exact failure. If it is a domain restriction, try the SDK's documented options and contact Expo once. If still failing after the time box, set P1 to the fallback runner for web and open a Phase 4 slice for it.
 
-Result: _pending_
+Result (2026-09-30, in progress): **web preview fails on any non-allowlisted origin; Expo Go pending.** Code: `spikes/snack-embed/` (Next.js 16, `snack-sdk` 6.6.2, SDK 54, the S2 allowlist app).
+
+- Served through a temporary Cloudflare quick tunnel (`https://*.trycloudflare.com`, standing in for the staging domain, which does not exist yet). The page loads, the Snack goes online, dependencies resolve from Snackager, and the iframe loads `snack-runtime.eascdn.net/v2/54/index.html?origin=<our origin>`, but the web player never connects (no `web` client in `connectedClients`, no logs, blank frame after 30 s).
+- Cause, from the runtime source (`runtime/src/transports/RuntimeTransportImplWebPlayer.ts` in expo/snack): the hosted web player talks only to a hardcoded list of origins (Expo's Snack domains, Draftbit, Codecademy) plus `http://localhost:*`; for anything else it logs "Access to origin ... is forbidden" and drops all messages. This is expo/snack#535 (open since 2024-01). It does not depend on the browser, so the Chrome/Safari/Firefox matrix is moot for web: every non-allowlisted origin fails, including Buildly's staging and production domains.
+- Options (DECISIONS.md P1): ask Expo to allowlist Buildly's origins (they have for partners, most recently Codecademy in #698); self-host the open-source web player with Buildly's origin allowed and point `webPlayerURL` at it; or the `expo export` fallback runner (TODO Phase 4b).
+- Still to run: Expo Go on iOS and Android from this page's QR (including AsyncStorage persistence across restart), error surfacing (type error, syntax error, runtime throw) with a device connected, and the 60 s dependency-update check.
 
 ## S2. Snack SDK and dependency allowlist check (gates Phase 2)
 
@@ -75,4 +80,18 @@ Steps:
 
 Pass criteria: warm check under 15 seconds on the worker's target instance size.
 
-Result: _pending_
+Result (2026-09-30): **pass, with a wide margin.** Code and raw output: `spikes/checker-speed/` (`results/*.json`).
+
+- Setup: the SDK 54 set from `foundation.json` installed once with `npm install --ignore-scripts` (697 packages, 307 MB, TypeScript 5.9.3 as in Expo's SDK 54 template, `extends: expo/tsconfig.base` + `strict`). A journal-like fixture (4 screens, typed AsyncStorage store, theme, 7 components; 450 lines) is copied into a fresh temp dir per check with `node_modules` symlinked, and `tsc --noEmit` runs with no npm scripts. Each check loads 505 files and about 125k lines of declarations.
+- `tsc` time per check (5 runs each):
+
+  | Environment | Cold | Warm median (max) | Incremental after a one-file edit |
+  | --- | --- | --- | --- |
+  | MacBook (Apple M5), host | 0.9 s | 0.7 s (1.0 s) | 0.6 s |
+  | Docker linux/arm64, 1 vCPU, 2 GB | 2.2 s | 1.8 s (1.9 s) | 1.9 s |
+  | Docker linux/amd64 (emulated), 1 vCPU, 2 GB | 4.1 s | 3.4 s (3.4 s) | 3.3 s |
+
+- The emulated x86 container is the pessimistic proxy for the Railway worker and is still about 4x under the 15 s budget. Not yet measured on Railway hardware itself; TODO 2.5.3's `checker:selftest` confirms it there.
+- `--incremental` with a kept `tsbuildinfo` saves nothing at this size, so the checker should use a fresh temp dir per check and skip incremental builds.
+- An injected `const x: number = "a"` returns exit 2 and `src/screens/Broken.tsx(1,14): error TS2322 ...`, the file/line shape TODO 2.5.1 parses.
+- Copying the pre-baked `node_modules` takes 7–9 s, so the worker image must bake it at build time (TODO 2.5.3), not copy per job; per-job assembly symlinks it.
