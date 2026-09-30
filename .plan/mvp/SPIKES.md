@@ -25,13 +25,26 @@ Pass criteria (all required):
 
 Fail handling: record the exact failure. If it is a domain restriction, try the SDK's documented options and contact Expo once. If still failing after the time box, set P1 to the fallback runner for web and open a Phase 4 slice for it.
 
-Result (2026-09-30, in progress): **web preview fails on any non-allowlisted origin; Expo Go pending.** Code: `spikes/snack-embed/` (Next.js 16, `snack-sdk` 6.6.2, SDK 54, the S2 allowlist app).
+Result (2026-09-30): **web preview fails on any non-allowlisted origin (resolved by D18); Expo Go passes on Android.** Code: `spikes/snack-embed/` (Next.js 16, `snack-sdk` 6.6.2, SDK 54, the S2 allowlist app).
 
 - Served through a temporary Cloudflare quick tunnel (`https://*.trycloudflare.com`, standing in for the staging domain, which does not exist yet). The page loads, the Snack goes online, dependencies resolve from Snackager, and the iframe loads `snack-runtime.eascdn.net/v2/54/index.html?origin=<our origin>`, but the web player never connects (no `web` client in `connectedClients`, no logs, blank frame after 30 s).
 - Cause, from the runtime source (`runtime/src/transports/RuntimeTransportImplWebPlayer.ts` in expo/snack): the hosted web player talks only to a hardcoded list of origins (Expo's Snack domains, Draftbit, Codecademy) plus `http://localhost:*`; for anything else it logs "Access to origin ... is forbidden" and drops all messages. This is expo/snack#535 (open since 2024-01). It does not depend on the browser, so the Chrome/Safari/Firefox matrix is moot for web: every non-allowlisted origin fails, including Buildly's staging and production domains.
 - Options (DECISIONS.md P1): ask Expo to allowlist Buildly's origins (they have for partners, most recently Codecademy in #698); self-host the open-source web player with Buildly's origin allowed and point `webPlayerURL` at it; or the `expo export` fallback runner (TODO Phase 4b).
 - Decision: D18. Self-host the Snack web player with Buildly's origins allowed (TODO 4b.0.1), ask Expo once to allowlist Buildly, and keep the `expo export` runner as the fallback. Feasibility: expo/snack is MIT-licensed and its `runtime` package already has a web build and deploy script (`web/deploy-script.js`) that Buildly can point at its own bucket.
-- Still to run: Expo Go on iOS and Android from this page's QR (including AsyncStorage persistence across restart), error surfacing (type error, syntax error, runtime throw) with a device connected, and the 60 s dependency-update check.
+- Expo Go, from this page's QR on the tunnel origin (founder's phones, current store Expo Go):
+
+  | Device | Opens SDK 54 session | All allowlisted deps render | AsyncStorage survives force-quit |
+  | --- | --- | --- | --- |
+  | Android (model 2412DPC0AG) | yes | yes ("S2 dependencies loaded", tabs) | yes (counter 7 → 8) |
+  | iPhone | not run in S1; the SDK 54 Snack template opened in S2 | not run | not run; covered by TODO 2.2.4 |
+
+  One warning is forwarded from the device on load: React Native's deprecated `SafeAreaView` is used by a dependency (the app itself imports it from `react-native-safe-area-context`).
+- Errors, read from the SDK state with the Android client connected:
+  - Type error (`const x: number = "..."`): not reported and the app keeps running. Snack strips types without checking, so `tsc` in the checker (S4) is the only type gate.
+  - Syntax error: `connectedClients[*].status = "error"` with `fileName: "App.tsx"` and the right `lineNumber`; this is what `awaitBundle` (TODO 4.5.1) can read.
+  - Runtime throw at module load: the phone showed a red error screen, but the SDK state stayed `status: "ok"` and no log arrived. The repair loop cannot rely on Snack for runtime errors. Device `console.warn` is forwarded to the log listener, so the foundation should add an error boundary and a global error handler that `console.error` the error with file and message (TODO 2.1.1), and `awaitBundle` should treat those logs as runtime errors.
+- Dependency update: adding `dayjs` resolved from Snackager in 725 ms (limit 60 s) while the device stayed connected.
+- AsyncStorage also persisted across the six hot reloads the error tests caused (counter 1 → 7).
 
 ## S2. Snack SDK and dependency allowlist check (gates Phase 2)
 
