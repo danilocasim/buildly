@@ -16,7 +16,8 @@
     "check": "drizzle-kit check",
     "migrate": "tsx scripts/migrate.ts",
     "migrate:down": "tsx scripts/migrate.ts down",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "grant-credits": "tsx scripts/grant-credits.ts"
   },
   "devDependencies": {
     "@buildly/starters": "workspace:*",

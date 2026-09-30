@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { recheckBuildCaps } from "./caps";
+import { consumeForBuild, grant } from "./credits";
 import { generations, projects, users } from "./schema";
 import { usage } from "./queries";
 import { createTestDatabase, type TestDatabase } from "./testing";
@@ -34,6 +35,17 @@ describe("recheckBuildCaps on claim", () => {
     expect((await recheckBuildCaps(t.db, await scenario("fifteen@example.com", 15), now)).ok).toBe(
       true,
     );
+  });
+
+  it("passes a 16th build that a top-up credit paid for", async () => {
+    const generationId = await scenario("credit16@example.com", 16);
+    const [row] = await t.db.select().from(generations);
+    void row;
+    const { eq } = await import("drizzle-orm");
+    const [g] = await t.db.select().from(generations).where(eq(generations.id, generationId));
+    await grant(t.db, { userId: g!.userId, amount: 1, reason: "topup" });
+    expect(await consumeForBuild(t.db, g!.userId, generationId)).toBe(true);
+    expect((await recheckBuildCaps(t.db, generationId, now)).ok).toBe(true);
   });
 
   it("refuses a 16th build that slipped past the API check in a race", async () => {

@@ -1,4 +1,4 @@
-import { usage } from "@buildly/db";
+import { credits, usage } from "@buildly/db";
 import { PLAN_LIMITS } from "@buildly/shared";
 import type { Deps } from "../deps";
 import { json } from "../http";
@@ -15,6 +15,10 @@ export async function getMe(request: Request, deps: Deps): Promise<Response> {
     displayName: user.displayName,
     plan: user.plan,
     isAdmin: user.isAdmin,
-    usage: { buildsThisMonth, buildsPerMonth: PLAN_LIMITS[user.plan].buildsPerMonth },
+    usage: {
+      buildsThisMonth,
+      buildsPerMonth: PLAN_LIMITS[user.plan].buildsPerMonth,
+      credits: await credits.balance(deps.db, user.id),
+    },
   });
 }

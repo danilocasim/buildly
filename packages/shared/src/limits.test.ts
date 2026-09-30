@@ -4,6 +4,7 @@ import {
   checkProject,
   startOfMonthUtc,
   startOfNextMonthUtc,
+  TOPUP,
   type BuildUsage,
 } from "./limits";
 
@@ -13,6 +14,8 @@ const base: BuildUsage = {
   buildsThisMonth: 0,
   buildsLastHour: 0,
   activeGeneration: false,
+  activeBuildsForUser: 0,
+  creditBalance: 0,
   now,
 };
 const code = (usage: Partial<BuildUsage>) => {
@@ -45,16 +48,43 @@ describe("build caps", () => {
       { activeGeneration: true, buildsThisMonth: 99 },
       "generation_active",
     ],
+    [
+      "free: a build running on another project blocks a second",
+      { activeBuildsForUser: 1 },
+      "concurrent_builds",
+    ],
+    ["pro: two builds at once are allowed", { plan: "pro" as const, activeBuildsForUser: 1 }, "ok"],
+    [
+      "pro: a third concurrent build is blocked",
+      { plan: "pro" as const, activeBuildsForUser: 2 },
+      "concurrent_builds",
+    ],
+    [
+      "free: 16th build with a top-up credit is allowed",
+      { buildsThisMonth: 15, creditBalance: 1 },
+      "ok",
+    ],
+    [
+      "pro: 201st build with top-up credits is allowed",
+      { plan: "pro" as const, buildsThisMonth: 200, creditBalance: 50 },
+      "ok",
+    ],
+    [
+      "credits do not bypass the Free hourly rate limit",
+      { buildsThisMonth: 15, creditBalance: 5, buildsLastHour: 10 },
+      "hourly_builds",
+    ],
   ])("%s", (_name, usage, expected) => {
     expect(code(usage)).toBe(expected);
   });
 
-  it("answers 429 with the next UTC month as resetAt", () => {
+  it("answers 429 with the next UTC month as resetAt and points to top-ups", () => {
     const result = checkBuild({ ...base, buildsThisMonth: 15 });
     expect(result).toEqual({
       ok: false,
       error: expect.objectContaining({ status: 429, resetAt: "2026-11-01T00:00:00.000Z" }),
     });
+    if (!result.ok) expect(result.error.message).toContain("top-up");
   });
 
   it("frees the hourly window an hour after the oldest build in it", () => {
@@ -69,10 +99,14 @@ describe("build caps", () => {
     });
   });
 
-  it("answers 409 for an active build", () => {
+  it("answers 409 for an active build on the project, 429 for too many concurrent builds", () => {
     expect(checkBuild({ ...base, activeGeneration: true })).toEqual({
       ok: false,
       error: expect.objectContaining({ status: 409, resetAt: null }),
+    });
+    expect(checkBuild({ ...base, activeBuildsForUser: 1 })).toEqual({
+      ok: false,
+      error: expect.objectContaining({ status: 429, resetAt: null }),
     });
   });
 
@@ -88,6 +122,23 @@ describe("build caps", () => {
     );
     // 15 builds last month do not count once the month rolls over; the caller counts from startOfMonthUtc.
     expect(code({ buildsThisMonth: 0, now: new Date("2027-01-01T00:00:00Z") })).toBe("ok");
+  });
+});
+
+describe("who pays", () => {
+  const paidBy = (usage: Partial<BuildUsage>) => {
+    const result = checkBuild({ ...base, ...usage });
+    return result.ok ? result.value.paidBy : result.error.code;
+  };
+
+  it("uses the monthly allowance first, then one top-up credit", () => {
+    expect(paidBy({ buildsThisMonth: 14, creditBalance: 50 })).toBe("plan");
+    expect(paidBy({ buildsThisMonth: 15, creditBalance: 50 })).toBe("credit");
+    expect(paidBy({ buildsThisMonth: 15, creditBalance: 0 })).toBe("monthly_builds");
+  });
+
+  it("a top-up is 50 builds for $5", () => {
+    expect(TOPUP).toEqual({ priceUsd: 5, credits: 50 });
   });
 });
 

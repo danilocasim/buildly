@@ -113,6 +113,7 @@ pnpm services:up / services:down      # Postgres on 5433, RustFS (S3) on 9000; h
 pnpm db:migrate / db:migrate:down      # apply / revert the newest migration (DATABASE_URL, default the docker DB)
 pnpm db:generate                       # after editing packages/db/src/schema.ts; also write migrations/down/<tag>.sql
 pnpm db:seed                           # admin@buildly.test (admin), 3 invites, a project per starter; idempotent
+pnpm db:grant-credits <email> <n> [note]   # top-up build credits (admin grant until Stripe, D21)
 pnpm --filter @buildly/web dev         # http://localhost:3300 (needs a .env with the local values from .env.example)
 pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310
 pnpm --filter @buildly/worker start    # the worker loop
@@ -122,6 +123,7 @@ pnpm --filter @buildly/worker start    # the worker loop
 - Each db integration test file gets its own database (`createTestDatabase` from `@buildly/db/testing`) and each storage test its own bucket (`@buildly/storage/testing`).
 - Handlers in `apps/web/src/server/handlers/` take `Deps`; test them with `createHarness()` (fresh database, recorded emails, settable clock, `signIn()` for a session cookie).
 - In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log.
+- Usage is governed only by plans and top-up build credits (D10, D21); there is no bring-your-own-key. All cap rules live in `packages/shared/src/limits.ts` (`checkBuild` returns who pays: `plan` or `credit`).
 
 ## Planned commands (not yet available)
 

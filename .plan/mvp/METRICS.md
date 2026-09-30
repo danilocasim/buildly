@@ -19,7 +19,7 @@ All events go into `analytics_events` (see ARCHITECTURE.md). Names are stable st
 | `preview.reset_demo_data` | web | `project_id` |
 | `snapshot.restored` | web | `project_id`, `snapshot_id` |
 | `export.created` | web | `project_id`, `zip_bytes` |
-| `cap.hit` | web | `cap: monthly_builds \| hourly_builds \| projects` |
+| `cap.hit` | web | `cap: monthly_builds \| hourly_builds \| concurrent_builds \| projects` |
 
 ## Formulas
 

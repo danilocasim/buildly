@@ -8,3 +8,4 @@ export * from "./snapshot-service";
 export * as queue from "./jobs";
 export * as auth from "./auth";
 export * from "./caps";
+export * as credits from "./credits";

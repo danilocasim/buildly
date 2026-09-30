@@ -19,7 +19,8 @@
     "db:generate": "pnpm --filter @buildly/db generate",
     "db:migrate": "pnpm --filter @buildly/db migrate",
     "db:migrate:down": "pnpm --filter @buildly/db migrate:down",
-    "db:seed": "pnpm --filter @buildly/db seed"
+    "db:seed": "pnpm --filter @buildly/db seed",
+    "db:grant-credits": "pnpm --filter @buildly/db grant-credits"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

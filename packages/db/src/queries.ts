@@ -139,6 +139,19 @@ export const generations = {
       .where(and(eq(generationsTable.id, generationId), eq(generationsTable.userId, userId)));
     return row;
   },
+  /** Non-terminal generations across all of a user's projects (concurrent build cap). */
+  async countActiveForUser(db: Executor, userId: string): Promise<number> {
+    const [row] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(generationsTable)
+      .where(
+        and(
+          eq(generationsTable.userId, userId),
+          inArray(generationsTable.status, [...ACTIVE_GENERATION_STATUSES]),
+        ),
+      );
+    return row?.n ?? 0;
+  },
   async hasActive(db: Executor, projectId: string): Promise<boolean> {
     const [row] = await db
       .select({ id: generationsTable.id })
