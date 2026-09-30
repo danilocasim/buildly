@@ -23,10 +23,10 @@ Goal: an empty but fully wired monorepo where every later slice has a home and C
 
 - [~] 0.2.1 GitHub Actions workflow: install, lint, typecheck, unit tests, on PR and main.
   Verify: open a PR with a deliberate lint error and see the check fail; fix and see it pass.
-  Status: `.github/workflows/ci.yml` written; locally a deliberate lint error makes `pnpm lint` exit 1. The PR round-trip has not been run yet.
-- [~] 0.2.2 Cache pnpm store and `packages/foundation/node_modules` in CI.
+  Status: `.github/workflows/ci.yml` written. PR #1 run 36721786854 passed after the fix, but the lint-probe run (36721760100) was cancelled before it started by the workflow's `cancel-in-progress` when the fix was pushed 14 s later, so the failing check was never observed. Redo the probe and wait for it to fail before pushing the fix.
+- [x] 0.2.2 Cache pnpm store and `packages/foundation/node_modules` in CI.
   Verify: second CI run of an unchanged lockfile finishes install in under 60 s (read from the job log).
-  Status: `setup-node` pnpm store cache and an `actions/cache` step for `packages/foundation/node_modules` are in the workflow; waiting on two CI runs.
+  Verified 2026-09-30 on PR #1: run 36721742630 saved both caches; run 36721786854 hit both caches and `pnpm install --frozen-lockfile` finished in 1.1 s.
 
 ### Slice 0.3 Configuration and secrets
 
