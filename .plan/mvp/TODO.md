@@ -43,9 +43,9 @@ Goal: retire the unknowns before building on them. Details and pass criteria in 
 
 - [x] 1.1 S2 Snack SDK version and dependency allowlist check.
   Verify: SPIKES.md S2 result recorded; `foundation.json` has `sdkVersion` and resolved versions; DECISIONS.md P2 resolved.
-  Verified 2026-09-30: SDK 54.0.0 pinned (D17); all eight dependencies resolve in Snack. Expo Go on devices is carried into 1.2 (S1) as a risk: store Expo Go is SDK 57.
+  Verified 2026-09-30: SDK 54.0.0 pinned (D17); all eight dependencies resolve in Snack; an SDK 54 Snack opens in current store Expo Go on iOS and Android.
 - [ ] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
-  Verify: SPIKES.md S1 result recorded with browser and device matrix, including whether current store Expo Go opens an SDK 54 Snack; DECISIONS.md P1 resolved.
+  Verify: SPIKES.md S1 result recorded with browser and device matrix; DECISIONS.md P1 resolved.
 - [ ] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.
   Verify: SPIKES.md S3 result recorded with token counts and cost per run; `packages/generator/src/rates.ts` created from the published rates.
 - [ ] 1.4 S4 Checker speed with pre-baked `node_modules`.
