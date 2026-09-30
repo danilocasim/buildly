@@ -5,7 +5,7 @@ describe("loadWebConfig", () => {
   it("validates the web variables and does not ask for worker-only ones", () => {
     let message = "";
     try {
-      loadWebConfig({});
+      loadWebConfig({} as NodeJS.ProcessEnv);
     } catch (error) {
       message = (error as Error).message;
     }

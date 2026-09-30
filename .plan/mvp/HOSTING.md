@@ -94,7 +94,7 @@ OpenAI is the only line that grows with usage, and model routing is what keeps i
   ```
 
 - Set an AWS Budgets alert (for example $5/month) so an unexpected spike is visible. The AWS account is shared, so the budget filters on the `project=buildly` tag (Budgets cannot filter by bucket); a new tag takes up to 24 hours to become selectable.
-- Local development keeps using MinIO in docker-compose.
+- Local development and CI use RustFS, an S3-compatible server, in docker-compose (`pnpm services:up`, port 9000; D20), because MinIO no longer publishes pullable images.
 
 ### Resend
 
@@ -134,7 +134,7 @@ OpenAI is the only line that grows with usage, and model routing is what keeps i
 | `STORAGE_REGION` | yes | yes | `ap-southeast-1` |
 | `STORAGE_BUCKET` | yes | yes | Per environment |
 | `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` | yes | yes | IAM user limited to the bucket |
-| `STORAGE_ENDPOINT` | local only | local only | Empty for real S3; `http://localhost:9000` for MinIO |
+| `STORAGE_ENDPOINT` | local only | local only | Empty for real S3; `http://localhost:9000` for the local RustFS server |
 | `OPENAI_API_KEY` | no | yes | The web app never calls OpenAI directly |
 | `OPENAI_BASE_URL` | no | optional | Only for a proxy or a test server |
 | `GENERATION_MODEL_PLAN`, `GENERATION_MODEL_EDIT` | no | yes | Model names are config, not code |

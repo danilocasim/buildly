@@ -1,0 +1,32 @@
+# Local services for development and integration tests. Credentials are local-only.
+#   pnpm services:up      start (and wait until Postgres accepts connections)
+#   pnpm services:down    stop; data stays in the named volumes
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: buildly
+      POSTGRES_PASSWORD: buildly
+      POSTGRES_DB: buildly
+    # 5433 so a Postgres already running on the host's 5432 keeps working.
+    ports: ["5433:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildly -d buildly"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # S3-compatible storage standing in for AWS S3. MinIO no longer publishes pullable
+  # images, so this is RustFS (Apache-2.0, S3 API incl. presigned URLs); see D20.
+  s3:
+    image: rustfs/rustfs:1.0.0
+    environment:
+      RUSTFS_ACCESS_KEY: buildly-dev
+      RUSTFS_SECRET_KEY: buildly-dev-secret
+    ports: ["9000:9000"]
+    volumes: ["s3-data:/data"]
+
+volumes:
+  postgres-data:
+  s3-data:

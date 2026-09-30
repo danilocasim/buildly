@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Buildly is an AI mobile app builder: a user describes an app or picks a starter, the AI generates a React Native + Expo + TypeScript project, the user previews it in the browser and in Expo Go, refines it in chat, and exports the source.
 
-**The repo is in implementation.** Phases 0–2 are done except two on-device checks: the workspace and CI, the spikes (`spikes/`, results in SPIKES.md), the Expo foundation (`packages/foundation`), three starters (`packages/starters`), and the type checker (`packages/checker`). `packages/shared` holds events, `Result`, `loadConfig`, diagnostics, and the foundation/starter manifest schemas. `apps/*` and the other packages are placeholders until their phase.
+**The repo is in implementation.** Phases 0–3 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), and the web app's auth, project, build, and cancel APIs plus `/admin/invites` (`apps/web`, Next.js 16). `packages/generator`, `snack`, `exporter`, and `eval` are placeholders until Phase 4 and later; the web UI is Phase 5–6.
 
 | Path | Role |
 | --- | --- |
@@ -67,7 +67,7 @@ These are from ARCHITECTURE.md and the brief. Details live there. What follows a
 
 **AI provider:** OpenAI through the official SDK behind a `Provider` interface. Model names are config (`GENERATION_MODEL_PLAN` for plans and initial builds, `GENERATION_MODEL_EDIT` for edits and repairs). This routing is required for the pricing to work (brief §13, D16). There is no bring-your-own-key (D10). The OpenAI key lives only in the worker environment, and CI scans client bundles and exports for secrets.
 
-**Hosting** (HOSTING.md): Railway (web, worker, Postgres) and AWS S3 in Singapore; MinIO locally. `STORAGE_ENDPOINT` is empty for real S3.
+**Hosting** (HOSTING.md): Railway (web, worker, Postgres) and AWS S3 in Singapore; RustFS locally (D20). `STORAGE_ENDPOINT` is empty for real S3.
 
 ## Workspace commands
 
@@ -104,12 +104,30 @@ On this Mac `/opt/homebrew/bin/docker` is an npm documentation generator, not Do
 - Jest tests (D19) in these two packages: `jest.resetModules()` gives a fresh store but a second React, so re-require `@testing-library/react-native/pure` after it and use the queries `render` returns; `toBeOnTheScreen` only works with the top-level instance. Bottom tabs are found with `getByLabelText(/^Name, tab/)`. `packages/starters/test/resolver.cjs` overlays a starter on the foundation.
 - After changing any exported component props or store signature, run `pnpm --filter foundation digest` and commit `dist/api-digest.md`.
 
+## Local services and database
+
+Integration tests (db, storage, worker, web) and the e2e test need the docker-compose services; `pnpm test` fails with a pointer to `pnpm services:up` when they are down.
+
+```bash
+pnpm services:up / services:down      # Postgres on 5433, RustFS (S3) on 9000; host ports avoid a local 5432
+pnpm db:migrate / db:migrate:down      # apply / revert the newest migration (DATABASE_URL, default the docker DB)
+pnpm db:generate                       # after editing packages/db/src/schema.ts; also write migrations/down/<tag>.sql
+pnpm db:seed                           # admin@buildly.test (admin), 3 invites, a project per starter; idempotent
+pnpm --filter @buildly/web dev         # http://localhost:3300 (needs a .env with the local values from .env.example)
+pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310
+pnpm --filter @buildly/worker start    # the worker loop
+```
+
+- The db scripts and tests never read `.env`: they default to the docker services, so a `DATABASE_URL` pointing at another Postgres cannot be migrated by accident.
+- Each db integration test file gets its own database (`createTestDatabase` from `@buildly/db/testing`) and each storage test its own bucket (`@buildly/storage/testing`).
+- Handlers in `apps/web/src/server/handlers/` take `Deps`; test them with `createHarness()` (fresh database, recorded emails, settable clock, `signIn()` for a session cookie).
+- In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log.
+
 ## Planned commands (not yet available)
 
 Later phases add these. Verify lines reference them, but they fail until their phase is done:
 
 ```bash
-pnpm db:migrate / db:migrate:down / db:seed
 pnpm test --tag snack                  # live Snack integration tests (skipped in CI)
 pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all --runs N
 pnpm eval:report <file.json>

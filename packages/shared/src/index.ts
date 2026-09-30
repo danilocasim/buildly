@@ -4,4 +4,5 @@ export * from "./diagnostics";
 export * from "./events";
 export * from "./foundation";
 export * from "./glob";
+export * from "./limits";
 export * from "./result";

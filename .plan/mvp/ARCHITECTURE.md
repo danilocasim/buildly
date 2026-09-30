@@ -48,6 +48,8 @@ Package manager: pnpm (versions pinned once in the `catalog:` of `pnpm-workspace
 
 Generation `status` values: `queued`, `planning`, `editing`, `checking`, `bundling`, `repairing`, `succeeded`, `failed`, `cancelled`, `timed_out`.
 
+Implemented in `packages/db/src/schema.ts` (Drizzle; `pnpm db:generate` writes the up migration, and each one needs a hand-written `migrations/down/<tag>.sql`). Beyond the table above: `users.is_admin`; `generations.kind` (`initial` | `edit`, for model routing and `build.*` metrics); `jobs.cancel_requested`, `jobs.last_error`, `jobs.finished_at`. `magic_links.token_hash` and `sessions.id` are SHA-256 hashes of the emailed and cookie tokens; the tokens themselves are never stored. A snapshot's JSON holds only the project-owned files; the foundation is added when an app is assembled.
+
 ## 3. Generation state machine (worker)
 
 ```
@@ -110,6 +112,8 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 
 ## 7. API surface (apps/web)
 
+Route files are thin: each calls a handler in `apps/web/src/server/handlers/` with injected `Deps` (db, email sender, app URL, clock), which is what the integration tests call. `@buildly/db` exposes the runtime API; migrations (`@buildly/db/migrate`), the dev seed (`/seed`), and test helpers (`/testing`) are separate entry points so they stay out of the web bundle.
+
 | Route | Method | Purpose |
 | --- | --- | --- |
 | `/api/auth/magic-link` | POST | Request link (invite gate) |
@@ -139,7 +143,7 @@ Documented in `.env.example`; validated with zod at startup in both apps by `loa
 ```
 DATABASE_URL
 STORAGE_REGION, STORAGE_BUCKET, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY
-STORAGE_ENDPOINT            optional: empty for AWS S3, http://localhost:9000 for local MinIO
+STORAGE_ENDPOINT            optional: empty for AWS S3, http://localhost:9000 for the local RustFS server (D20)
 OPENAI_API_KEY, GENERATION_MODEL_PLAN, GENERATION_MODEL_EDIT
 OPENAI_BASE_URL             optional: only for a proxy or a test server
 EMAIL_PROVIDER_API_KEY, EMAIL_FROM
