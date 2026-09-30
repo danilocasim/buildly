@@ -41,8 +41,9 @@ Goal: an empty but fully wired monorepo where every later slice has a home and C
 
 Goal: retire the unknowns before building on them. Details and pass criteria in [`SPIKES.md`](SPIKES.md). **Parallel-ok** with Phase 0.
 
-- [ ] 1.1 S2 Snack SDK version and dependency allowlist check.
+- [x] 1.1 S2 Snack SDK version and dependency allowlist check.
   Verify: SPIKES.md S2 result recorded; `foundation.json` has `sdkVersion` and resolved versions; DECISIONS.md P2 resolved.
+  Verified 2026-09-30: SDK 54.0.0 pinned (D17); all eight dependencies resolve in Snack; an SDK 54 Snack opens in current store Expo Go on iOS and Android.
 - [ ] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
   Verify: SPIKES.md S1 result recorded with browser and device matrix; DECISIONS.md P1 resolved.
 - [ ] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.

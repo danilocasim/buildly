@@ -1,0 +1,3 @@
+# Own workspace root so pnpm does not resolve up to the repo workspace; the mockup has its own lockfile.
+packages:
+  - .

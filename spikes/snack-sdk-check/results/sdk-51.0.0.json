@@ -1,0 +1,90 @@
+{
+  "sdkVersion": "51.0.0",
+  "checkedAt": "2026-09-30T13:44:23.949Z",
+  "snackSdk": "6.6.2",
+  "pass": true,
+  "rows": [
+    {
+      "name": "@react-navigation/native",
+      "requested": "7.5.0",
+      "version": "7.5.0",
+      "handle": "snackager-1/@react-navigation~native@7.5.0",
+      "preloaded": false,
+      "peerDependencies": {
+        "react": "^18.2.0",
+        "react-native": "*"
+      }
+    },
+    {
+      "name": "@react-navigation/native-stack",
+      "requested": "7.20.0",
+      "version": "7.20.0",
+      "handle": "snackager-1/@react-navigation~native-stack@7.20.0",
+      "preloaded": false,
+      "peerDependencies": {
+        "react": "^18.2.0",
+        "react-native": "*",
+        "react-native-screens": "^4.0.0",
+        "@react-navigation/native": "7.5.0",
+        "react-native-safe-area-context": "^4.0.0"
+      }
+    },
+    {
+      "name": "@react-navigation/bottom-tabs",
+      "requested": "7.20.0",
+      "version": "7.20.0",
+      "handle": "snackager-1/@react-navigation~bottom-tabs@7.20.0",
+      "preloaded": false,
+      "peerDependencies": {
+        "react": "^18.2.0",
+        "react-native": "*",
+        "react-native-screens": "^4.0.0",
+        "@react-navigation/native": "7.5.0",
+        "react-native-safe-area-context": "^4.0.0"
+      }
+    },
+    {
+      "name": "react-native-screens",
+      "requested": "3.31.1",
+      "version": "3.31.1",
+      "wantedVersion": "3.31.1",
+      "handle": "snackager-1/react-native-screens@3.31.1",
+      "preloaded": false,
+      "peerDependencies": {
+        "react": "*",
+        "react-native": "*"
+      }
+    },
+    {
+      "name": "react-native-safe-area-context",
+      "requested": "4.10.5",
+      "version": "4.10.5",
+      "wantedVersion": "4.10.5",
+      "preloaded": true
+    },
+    {
+      "name": "@react-native-async-storage/async-storage",
+      "requested": "1.23.1",
+      "version": "1.23.1",
+      "wantedVersion": "1.23.1",
+      "preloaded": true
+    },
+    {
+      "name": "expo-status-bar",
+      "requested": "~1.12.1",
+      "version": "~1.12.1",
+      "wantedVersion": "~1.12.1",
+      "handle": "snackager-1/expo-status-bar@1.12.1",
+      "preloaded": false,
+      "peerDependencies": {}
+    },
+    {
+      "name": "@expo/vector-icons",
+      "requested": "^14.0.3",
+      "version": "^14.0.3",
+      "wantedVersion": "^14.0.3",
+      "preloaded": true
+    }
+  ],
+  "missingDependencies": {}
+}

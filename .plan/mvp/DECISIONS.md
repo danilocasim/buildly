@@ -20,13 +20,13 @@ Newest at the bottom. A decision is one line of what, one of why, and what would
 | D14 | 2026-09-30 | Object storage is **AWS S3** in `ap-southeast-1`, private bucket, presigned downloads, exports expire after 7 days | Costs under $1 a month at beta size; the code already targets the S3 API; keeps a path to AWS open | Download volume reaches hundreds of GB a month (R2 has free egress) |
 | D15 | 2026-09-30 | Supporting services: **Resend** for email, **Cloudflare** for DNS and TLS, **Sentry** for errors; Stripe only after the beta | Free tiers cover the beta | Public launch (Resend paid plan) |
 | D16 | 2026-09-30 | AI provider is **OpenAI**, replacing DeepSeek. Official `openai` SDK behind a provider interface; model names are config; **model routing**: flagship for plans and initial builds, small model for edits and repairs | Founder's choice; mature tool calling. Flagship-only costs about $0.12 per build, which breaks the Pro plan at full usage, so routing (blended about $0.04) is required | Harness shows the small model misses H2 (then P5), or OpenAI prices change |
+| D17 | 2026-09-30 | Foundation pins **Expo SDK 54.0.0** (resolves P2), with the versions in `packages/foundation/foundation.json` | Newest SDK the published `snack-sdk` (6.6.2) accepts; every allowlisted dependency resolves on it (SPIKES.md S2) | `snack-sdk` on npm supports a newer SDK, or store Expo Go stops opening SDK 54 Snacks (it did on iOS and Android on 2026-09-30, SPIKES.md S2) |
 
 ## Pending, gated on spikes or the harness
 
 | # | Question | Gate | Options |
 | --- | --- | --- | --- |
 | P1 | Snack web preview iframe on a non-localhost domain | SPIKES.md S1 | Keep Snack for web; or fallback runner for web with Snack for phone |
-| P2 | Which Snack-supported Expo SDK to pin | SPIKES.md S1 | Latest Snack-supported SDK that resolves all allowlisted deps |
 | P3 | Which OpenAI model for plans and which for edits | EVAL.md run E1 | Plan: `gpt-6.1-sol` or `gpt-5.3-codex`. Edit: `gpt-6-luna`, or the plan model if the small one misses H2 |
 | P5 | Pro build cap or price if routing cannot hold blended cost near $0.04 | EVAL.md run E1 | Keep 200 builds at $12; lower Pro to 80 builds; raise Pro price |
 | P4 | Whether a Starters page is needed beyond Home cards | Beta feedback | Reserve the route; ship only Home cards |
