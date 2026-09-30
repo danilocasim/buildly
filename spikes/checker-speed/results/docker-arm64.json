@@ -1,0 +1,14 @@
+{
+  "label": "docker-linux/arm64-1cpu-2gb",
+  "node": "v22.23.3",
+  "runs": 5,
+  "at": "2026-09-30T14:19:27.284Z",
+  "coldMs": 2170,
+  "warmMs": { "median": 1827, "max": 1941, "all": [1890, 1790, 1773, 1827, 1941] },
+  "incrementalFirstMs": 1922,
+  "incrementalEditMs": { "median": 1890, "max": 2185, "all": [2185, 1890, 1983, 1794, 1801] },
+  "errorPath": {
+    "status": 2,
+    "diagnostic": "src/screens/Broken.tsx(1,14): error TS2322: Type 'string' is not assignable to type 'number'."
+  }
+}

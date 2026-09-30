@@ -1,0 +1,17 @@
+{
+  "name": "spike-openai-smoke",
+  "private": true,
+  "type": "module",
+  "description": "SPIKES.md S3: OpenAI tool calling and cost smoke on the candidate models.",
+  "scripts": {
+    "smoke": "tsx smoke.ts"
+  },
+  "dependencies": {
+    "openai": "7.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "22",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  }
+}

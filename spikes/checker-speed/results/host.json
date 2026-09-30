@@ -1,0 +1,14 @@
+{
+  "label": "macbook-m5-host",
+  "node": "v26.7.0",
+  "runs": 5,
+  "at": "2026-09-30T14:18:45.078Z",
+  "coldMs": 882,
+  "warmMs": { "median": 686, "max": 1006, "all": [1006, 804, 686, 627, 611] },
+  "incrementalFirstMs": 601,
+  "incrementalEditMs": { "median": 619, "max": 665, "all": [619, 633, 574, 581, 665] },
+  "errorPath": {
+    "status": 2,
+    "diagnostic": "src/screens/Broken.tsx(1,14): error TS2322: Type 'string' is not assignable to type 'number'."
+  }
+}

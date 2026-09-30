@@ -11,7 +11,8 @@ Where each part of Buildly runs, what it costs, and how to set it up. Prices wer
 | Magic-link email | Resend | Free, 3,000 emails a month and 100 a day |
 | DNS, TLS, and domain | Cloudflare | Free, plus about $12 a year for the domain |
 | AI generation | OpenAI API | Pay per token, about $0.04 per build with model routing, $0.12 if the flagship does everything |
-| Previews on web and phone | Expo Snack | Free, hosted by Expo |
+| Previews on phone (Expo Go) | Expo Snack | Free, hosted by Expo |
+| Web preview player | Self-hosted build of Snack's web player (D18), static files on its own domain | Static hosting (Cloudflare Pages or S3; chosen in TODO 4b.0.1), about $0 |
 | Error alerts | Sentry | Free tier |
 | Payments after the beta | Stripe | No monthly fee, 2.9% + $0.30 per charge |
 

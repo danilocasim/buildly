@@ -99,6 +99,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 - `sdkVersion` is pinned in `packages/foundation/foundation.json` (54.0.0, D17) and must be one the published `snack-sdk` accepts (SPIKES.md S2); `SNACK_SDK_VERSION` must equal it.
 - The worker reads bundle and runtime errors from the session's state and normalizes them into the same diagnostic shape the checker uses.
 - The web app receives `webPreviewURL` and the online `url` over the project API; the iframe is rendered only with the SDK's web preview reference wiring.
+- Web preview uses Buildly's self-hosted build of the Snack web player (`webPlayerURL`, D18) because Snack's hosted player only talks to Expo's allowlisted origins. It lives on its own registrable domain, since it runs generated code in the user's browser. Expo Go uses Snack directly.
 - Snack sessions never receive secrets. Files sent are exactly the foundation plus project files.
 
 ## 7. API surface (apps/web)
@@ -121,7 +122,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 ## 8. Security boundaries
 
 - OpenAI key, storage credentials, and DB URL exist only in the worker and server runtime env. A CI test greps the built client bundle and every export ZIP for key prefixes and env names.
-- Snack iframe is sandboxed; the workspace page sets a CSP that allows only the Snack origins for `frame-src`.
+- The web player iframe is sandboxed; the workspace page sets a CSP that allows only the self-hosted player origin for `frame-src`.
 - Generated code never runs on Buildly servers. The checker runs `tsc` only, with a 60-second timeout and no scripts.
 - Rate limits and caps are enforced in the API before a job is enqueued, and re-checked by the worker on claim.
 

@@ -63,7 +63,7 @@ These are from ARCHITECTURE.md and the brief. Details live there. What follows a
 - At most one non-terminal generation per project, enforced by a partial unique index.
 - Model tool calls (`list_files`, `read_file`, `write_file`, `delete_file`, `finish`) are validated server-side, with a rejection budget.
 
-**Previews** run on Expo Snack via `snack-sdk`: a web player iframe plus an Expo Go QR code. Buildly never executes generated code on its servers; the checker only runs `tsc`. Export ZIPs are assembled by Buildly, not by Snack.
+**Previews** run on Expo Snack via `snack-sdk`: a web player iframe plus an Expo Go QR code. The web player is Buildly's self-hosted build of Snack's player (`webPlayerURL`, D18), because Expo's hosted one only talks to allowlisted origins. Buildly never executes generated code on its servers; the checker only runs `tsc`. Export ZIPs are assembled by Buildly, not by Snack.
 
 **AI provider:** OpenAI through the official SDK behind a `Provider` interface. Model names are config (`GENERATION_MODEL_PLAN` for plans and initial builds, `GENERATION_MODEL_EDIT` for edits and repairs). This routing is required for the pricing to work (brief §13, D16). There is no bring-your-own-key (D10). The OpenAI key lives only in the worker environment, and CI scans client bundles and exports for secrets.
 

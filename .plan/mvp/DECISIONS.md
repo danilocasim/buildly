@@ -21,12 +21,12 @@ Newest at the bottom. A decision is one line of what, one of why, and what would
 | D15 | 2026-09-30 | Supporting services: **Resend** for email, **Cloudflare** for DNS and TLS, **Sentry** for errors; Stripe only after the beta | Free tiers cover the beta | Public launch (Resend paid plan) |
 | D16 | 2026-09-30 | AI provider is **OpenAI**, replacing DeepSeek. Official `openai` SDK behind a provider interface; model names are config; **model routing**: flagship for plans and initial builds, small model for edits and repairs | Founder's choice; mature tool calling. Flagship-only costs about $0.12 per build, which breaks the Pro plan at full usage, so routing (blended about $0.04) is required | Harness shows the small model misses H2 (then P5), or OpenAI prices change |
 | D17 | 2026-09-30 | Foundation pins **Expo SDK 54.0.0** (resolves P2), with the versions in `packages/foundation/foundation.json` | Newest SDK the published `snack-sdk` (6.6.2) accepts; every allowlisted dependency resolves on it (SPIKES.md S2) | `snack-sdk` on npm supports a newer SDK, or store Expo Go stops opening SDK 54 Snacks (it did on iOS and Android on 2026-09-30, SPIKES.md S2) |
+| D18 | 2026-09-30 | Web preview uses a **self-hosted build of Snack's open-source web player** with Buildly's origins allowed, passed to `snack-sdk` as `webPlayerURL`, on its own registrable domain; Expo Go stays on Snack. Resolves P1. Ask Expo once to allowlist Buildly's origins; the `expo export` runner (TODO 4b.1–4b.3) is the fallback | Snack's hosted player refuses origins outside Expo's hardcoded allowlist (SPIKES.md S1). Self-hosting keeps the Snack pipeline and error reporting with one static build per SDK; the export runner needs containers and per-project builds | Expo allowlists Buildly (drop the self-hosted copy), or the player cannot be built or kept current per SDK (move to the export runner) |
 
 ## Pending, gated on spikes or the harness
 
 | # | Question | Gate | Options |
 | --- | --- | --- | --- |
-| P1 | Snack web preview iframe on a non-localhost domain | SPIKES.md S1 | Keep Snack for web; or fallback runner for web with Snack for phone |
 | P3 | Which OpenAI model for plans and which for edits | EVAL.md run E1 | Plan: `gpt-6.1-sol` or `gpt-5.3-codex`. Edit: `gpt-6-luna`, or the plan model if the small one misses H2 |
 | P5 | Pro build cap or price if routing cannot hold blended cost near $0.04 | EVAL.md run E1 | Keep 200 builds at $12; lower Pro to 80 builds; raise Pro price |
 | P4 | Whether a Starters page is needed beyond Home cards | Beta feedback | Reserve the route; ship only Home cards |

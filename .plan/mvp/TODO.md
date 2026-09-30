@@ -44,14 +44,18 @@ Goal: retire the unknowns before building on them. Details and pass criteria in 
 - [x] 1.1 S2 Snack SDK version and dependency allowlist check.
   Verify: SPIKES.md S2 result recorded; `foundation.json` has `sdkVersion` and resolved versions; DECISIONS.md P2 resolved.
   Verified 2026-09-30: SDK 54.0.0 pinned (D17); all eight dependencies resolve in Snack; an SDK 54 Snack opens in current store Expo Go on iOS and Android.
-- [ ] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
+- [x] 1.2 S1 Snack web preview on the staging domain, plus Expo Go on iOS and Android.
   Verify: SPIKES.md S1 result recorded with browser and device matrix; DECISIONS.md P1 resolved.
-- [ ] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.
+  Verified 2026-09-30: web preview fails outside Expo's origin allowlist, resolved as D18 (self-hosted player); Expo Go opens, renders, and persists on Android; iOS persistence is left to 2.2.4; runtime errors do not reach the SDK (see 2.1.1).
+- [x] 1.3 S3 OpenAI tool-calling and cost smoke on the flagship, coding, and small candidates.
   Verify: SPIKES.md S3 result recorded with token counts and cost per run; `packages/generator/src/rates.ts` created from the published rates.
-- [ ] 1.4 S4 Checker speed with pre-baked `node_modules`.
+  Verified 2026-09-30: 5 runs per model plus one edit, all criteria met (flagship initial mean $0.084, small-model edit $0.0029, 0 JSON errors, cached tokens reported); `rates.ts` from the published Standard rates.
+- [x] 1.4 S4 Checker speed with pre-baked `node_modules`.
   Verify: SPIKES.md S4 result recorded; warm check under 15 s.
-- [ ] 1.5 If S1 failed for web: add a "Phase 4b fallback web runner" section to this file with slices for the container image, `expo export --platform web`, and isolated-origin static hosting.
+  Verified 2026-09-30: warm check 1.8 s (arm64) and 3.4 s (emulated amd64) in a 1 vCPU / 2 GB container.
+- [x] 1.5 If S1 failed for web: add a "Phase 4b fallback web runner" section to this file with slices for the container image, `expo export --platform web`, and isolated-origin static hosting.
   Verify: section exists or S1 passed.
+  Verified 2026-09-30: S1 failed for web; Phase 4b added below Phase 4.
 
 ---
 
@@ -61,7 +65,7 @@ Goal: the one Expo foundation every generated app is built on, three starters as
 
 ### Slice 2.1 Foundation app shell
 
-- [ ] 2.1.1 `packages/foundation` Expo project pinned to the S2 SDK: `App.tsx` with NavigationContainer, bottom tabs, native stack, `ThemeProvider`, `StatusBar`.
+- [ ] 2.1.1 `packages/foundation` Expo project pinned to the S2 SDK: `App.tsx` with NavigationContainer, bottom tabs, native stack, `ThemeProvider`, `StatusBar`, and an error boundary plus global error handler that `console.error` runtime errors with file and message (Snack does not report runtime errors to the SDK, SPIKES.md S1).
   Verify: `pnpm --filter foundation typecheck` exits 0; `pnpm --filter foundation test` renders `App` with RNTL without throwing.
 - [ ] 2.1.2 `src/theme`: tokens from brief §3 mapped to RN values, spacing and type scales, `useTheme()`.
   Verify: unit test snapshot of the token object; a11y contrast check for text on background ≥ 4.5:1 computed in the test.
@@ -185,7 +189,7 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 - [ ] 4.2.1 In-memory `ProjectFiles` with `list/read/write/delete` and a change log.
   Verify: unit tests: write then read; delete then list; change log records every mutation.
-- [ ] 4.2.2 Validation per ARCHITECTURE.md §4: layout globs, forbidden files, path traversal, 64 KB cap, import allowlist scan, rejection budget of 10.
+- [ ] 4.2.2 Validation per ARCHITECTURE.md §4: layout globs, forbidden files, path traversal, 64 KB cap, import allowlist scan, rejection budget of 10; a `read_file` of a missing project file returns "not found" without spending the budget (SPIKES.md S3).
   Verify: unit tests: `../secrets`, `package.json`, `src/data/store.ts`, an import of `react-native-maps`, a 65 KB file → each rejected with a distinct reason; 11th rejection fails the run.
 - [ ] 4.2.3 `finish` tool captures `summary` and `screens[]`; screens validated against files that register a route.
   Verify: unit test: a screen name without a matching route file is dropped with a warning.
@@ -237,6 +241,32 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ---
 
+## Phase 4b — Fallback web runner
+
+Goal: a web preview Buildly controls, because Snack's hosted web player refuses non-allowlisted origins (SPIKES.md S1). Expo Go previews stay on Snack. D18 picks slice 4b.0; slices 4b.1–4b.3 are the fallback if 4b.0 cannot be built or kept current.
+
+### Slice 4b.0 Self-hosted Snack web player (chosen, D18)
+
+- [ ] 4b.0.1 Build the open-source Snack web player (expo/snack `runtime`, web target) for the pinned SDK with Buildly's preview origins added to `allowedOrigins`; host it on its own registrable domain (never the app's), no cookies; pass it as `webPlayerURL`. Document the per-SDK rebuild.
+  Verify: the S1 spike page on the staging domain renders the journal starter through the self-hosted player; a page on another origin gets no messages.
+
+### Slice 4b.1 Runner container image (fallback)
+
+- [ ] 4b.1.1 Container image with Node 22 and the pre-baked foundation `node_modules` (shared with TODO 2.5.3) that takes a snapshot's files as input and produces a static web build; no network access during the build; CPU, memory, and 120 s time limits.
+  Verify: `docker run` with the journal starter snapshot outputs `dist/index.html` within the time limit; a build that tries to reach the network fails.
+
+### Slice 4b.2 `expo export --platform web` (fallback)
+
+- [ ] 4b.2.1 Worker `bundling` step for web runs `npx expo export --platform web` inside the runner container on the assembled project and maps Metro errors to the normalized diagnostic shape (TODO 2.5.2).
+  Verify: integration test: journal starter → export succeeds; an injected syntax error → one diagnostic with file and line; the build never runs npm scripts from the project.
+
+### Slice 4b.3 Isolated-origin static hosting (fallback)
+
+- [ ] 4b.3.1 Upload each export to storage under `previews/{projectId}/{snapshotId}/` and serve it from a dedicated preview origin (separate registrable domain, no cookies, strict CSP) that the workspace iframe loads with `sandbox="allow-scripts"`.
+  Verify: e2e: the workspace iframe renders the export; the preview origin cannot read the app's cookies or call its API (checked with a fixture that tries).
+
+---
+
 ## Phase 5 — Web app: workspace
 
 Goal: the main editing experience against a real generation stream. Gated by S1.
@@ -261,8 +291,8 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.3 Preview panel
 
-- [ ] 5.3.1 Snack web player iframe inside a phone frame, wired through the SDK web preview reference; CSP `frame-src` limited to Snack origins; label "Web preview".
-  Verify: e2e (tagged `@snack`): iframe `src` equals the session `webPreviewURL`; a non-Snack `src` is blocked by CSP (checked via console error).
+- [ ] 5.3.1 Web player iframe (the self-hosted player from 4b.0.1, D18) inside a phone frame, wired through the SDK web preview reference; CSP `frame-src` limited to the player origin; label "Web preview".
+  Verify: e2e (tagged `@snack`): iframe `src` equals the session `webPreviewURL` on the player origin; any other `src` is blocked by CSP (checked via console error).
 - [ ] 5.3.2 Two viewport presets (small and large phone), build status chip, Refresh, Reset demo data (posts a message the foundation listens for, or reloads with a `reset=1` param).
   Verify: e2e: preset toggles the frame dimensions; Reset triggers `preview.reset_demo_data` event; **manual**: demo pill reappears after reset.
 - [ ] 5.3.3 Browser and phone verification shown separately: "Web: bundled ✓ / Phone: not verified" until the user opens the QR modal.
@@ -347,7 +377,7 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 - [ ] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
   Verify: CI step passes; injecting `process.env.OPENAI_API_KEY` into a client component fails the build.
-- [ ] 7.2.2 Security headers: CSP with Snack `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
+- [ ] 7.2.2 Security headers: CSP with the web player origin as the only `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
   Verify: integration test asserts headers on `/` and the workspace route.
 - [ ] 7.2.3 Rate limit on magic-link requests (5 per email per hour) and on API routes by session.
   Verify: integration test: 6th request → 429.
@@ -400,7 +430,7 @@ Check each only with the evidence named.
   Verify: ten `invites` rows accepted.
 - [ ] 9.2.2 Feedback capture: an in-app "Report a problem" link that attaches `generation_id`, plus a weekly 20-minute call with three users.
   Verify: at least one report received through the link.
-- [ ] 9.2.3 Weekly metrics review against brief §1 targets for two weeks; write `reports/beta-review.md` with a go/no-go on investing in the fallback runner, billing, and public launch.
+- [ ] 9.2.3 Weekly metrics review against brief §1 targets for two weeks; write `reports/beta-review.md` with a go/no-go on investing in the `expo export` fallback runner, billing, and public launch.
   Verify: the review file exists and names a decision.
 
 ---
