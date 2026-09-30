@@ -8,7 +8,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "start": "tsx src/main.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -16,6 +17,8 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@buildly/shared": "workspace:*"
+    "@buildly/db": "workspace:*",
+    "@buildly/shared": "workspace:*",
+    "tsx": "catalog:"
   }
 }

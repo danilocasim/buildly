@@ -13,7 +13,13 @@
     "format": "prettier --write .",
     "test": "pnpm -r test",
     "check:secrets": "tsx scripts/check-no-secrets.ts",
-    "checker:selftest": "pnpm --filter @buildly/checker selftest"
+    "checker:selftest": "pnpm --filter @buildly/checker selftest",
+    "services:up": "sh scripts/services.sh up",
+    "services:down": "sh scripts/services.sh down",
+    "db:generate": "pnpm --filter @buildly/db generate",
+    "db:migrate": "pnpm --filter @buildly/db migrate",
+    "db:migrate:down": "pnpm --filter @buildly/db migrate:down",
+    "db:seed": "pnpm --filter @buildly/db seed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,7 +1,23 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "allowJs": false,
+    "incremental": true,
+    "paths": { "@/*": ["./*"] },
+    "plugins": [{ "name": "next" }]
   },
-  "include": ["src", "vitest.config.ts"]
+  "include": [
+    "next-env.d.ts",
+    "app",
+    "src",
+    "e2e",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "next.config.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
 }

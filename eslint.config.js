@@ -30,6 +30,14 @@ export default defineConfig(
     },
   },
   {
+    // Test stubs are often async without awaiting, and expect.objectContaining() is typed any.
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/e2e/**/*.ts"],
+    rules: {
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+    },
+  },
+  {
     // Jest suites for the Expo packages re-require modules after jest.resetModules().
     files: ["packages/foundation/test/**", "packages/starters/test/**"],
     rules: {

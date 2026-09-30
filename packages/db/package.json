@@ -4,15 +4,33 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./migrate": "./src/migrate.ts",
+    "./seed": "./src/seed.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate": "drizzle-kit generate",
+    "check": "drizzle-kit check",
+    "migrate": "tsx scripts/migrate.ts",
+    "migrate:down": "tsx scripts/migrate.ts down",
+    "seed": "tsx scripts/seed.ts"
   },
   "devDependencies": {
+    "@buildly/starters": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@buildly/shared": "workspace:*",
+    "@buildly/storage": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.1"
   }
 }

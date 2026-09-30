@@ -15,7 +15,25 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    # The same services as docker-compose.yml, on the same host ports.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: buildly
+          POSTGRES_PASSWORD: buildly
+          POSTGRES_DB: buildly
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U buildly -d buildly"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+      s3:
+        image: rustfs/rustfs:1.0.0
+        env:
+          RUSTFS_ACCESS_KEY: buildly-dev
+          RUSTFS_SECRET_KEY: buildly-dev-secret
+        ports: ["9000:9000"]
     steps:
       - uses: actions/checkout@v7
 
@@ -36,6 +54,9 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Wait for the S3 server
+        run: for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:9000/ && exit 0; sleep 1; done; exit 1
+
       - name: Lint
         run: pnpm lint
 
@@ -48,3 +69,16 @@ jobs:
       # The committed API digest must match the foundation source (TODO 2.3.2).
       - name: API digest is up to date
         run: pnpm --filter foundation digest && git diff --exit-code packages/foundation/dist/api-digest.md
+
+      # The Drizzle schema has no changes missing from the committed migrations.
+      - name: Migrations match the schema
+        run: |
+          pnpm --filter @buildly/db check
+          pnpm db:generate
+          test -z "$(git status --porcelain packages/db/migrations)"
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @buildly/web exec playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: pnpm --filter @buildly/web test:e2e

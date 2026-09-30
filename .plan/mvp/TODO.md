@@ -143,50 +143,66 @@ Goal: the boring parts the generator and UI sit on.
 
 ### Slice 3.1 Database
 
-- [ ] 3.1.1 Drizzle schema for every table in ARCHITECTURE.md §2, including the partial unique index "one non-terminal generation per project".
+- [x] 3.1.1 Drizzle schema for every table in ARCHITECTURE.md §2, including the partial unique index "one non-terminal generation per project".
   Verify: `pnpm db:migrate` on an empty Postgres (docker-compose service) applies cleanly; `pnpm db:migrate:down` reverts; `drizzle-kit check` reports no drift.
-- [ ] 3.1.2 Query helpers: `projects.getForUser`, `snapshots.create`, `generations.startExclusive` (fails if one is active), `usage.countBuildsThisMonth`.
+  Verified 2026-10-01: `pnpm db:migrate` on an empty database creates 12 tables and the partial unique index `generations_one_active_per_project`; `pnpm db:migrate:down` leaves 0 tables and 0 enum types; `drizzle-kit check` passes. CI also fails if the schema has changes missing from `migrations/`.
+- [x] 3.1.2 Query helpers: `projects.getForUser`, `snapshots.create`, `generations.startExclusive` (fails if one is active), `usage.countBuildsThisMonth`.
   Verify: integration tests against the docker Postgres: `startExclusive` called twice concurrently yields one success and one conflict.
-- [ ] 3.1.3 Seed script for local dev: one admin user, three invites, one project per starter.
+  Verified 2026-10-01: `packages/db/src/queries.test.ts` against docker Postgres; two concurrent `startExclusive` calls yield one success and one `generation_active`.
+- [x] 3.1.3 Seed script for local dev: one admin user, three invites, one project per starter.
   Verify: `pnpm db:seed` then `pnpm db:seed` again is idempotent (row counts unchanged).
+  Verified 2026-10-01: `pnpm db:seed` twice → 1 user, 3 invites, 3 projects, 3 snapshots both times; `src/seed.test.ts` asserts the same.
 
 ### Slice 3.2 Magic-link auth and invites
 
-- [ ] 3.2.1 `POST /api/auth/magic-link`: invite gate, token hashed at rest, 15-minute expiry, email sent via provider adapter with a console adapter for dev.
+- [x] 3.2.1 `POST /api/auth/magic-link`: invite gate, token hashed at rest, 15-minute expiry, email sent via provider adapter with a console adapter for dev.
   Verify: integration test: non-invited email → 403 with generic message; invited email → 200 and a `magic_links` row with `used_at` null.
-- [ ] 3.2.2 `GET /api/auth/callback`: consumes token once, creates `users` row on first login, sets httpOnly secure cookie session.
+  Verified 2026-10-01: `apps/web/src/server/handlers/auth.test.ts`: not invited → 403 `not_invited`; invited → 200 and a `magic_links` row with `used_at` null and only the token hash stored.
+- [x] 3.2.2 `GET /api/auth/callback`: consumes token once, creates `users` row on first login, sets httpOnly secure cookie session.
   Verify: integration test: valid token → 302 to Home with cookie; same token again → 400; expired → 400.
-- [ ] 3.2.3 Session middleware and `GET /api/me`.
+  Verified 2026-10-01: valid token → 302 to `/` with `HttpOnly; Secure; SameSite=Lax` cookie, user created, invite accepted; reuse → 400; after 15 minutes → 400.
+- [x] 3.2.3 Session middleware and `GET /api/me`.
   Verify: integration test: no cookie → 401; valid cookie → user JSON without email of other users.
-- [ ] 3.2.4 Admin flag on users and an `/admin/invites` page to add emails.
+  Verified 2026-10-01: no cookie or a forged one → 401; a valid cookie → own profile and usage only; an expired session → 401. The "middleware" is `requireUser()` in `src/server/session.ts`.
+- [x] 3.2.4 Admin flag on users and an `/admin/invites` page to add emails.
   Verify: e2e: non-admin gets 404; admin adds an email and it appears in `invites`.
+  Verified 2026-10-01: Playwright `apps/web/e2e/admin-invites.spec.ts` (real Next server, `buildly_e2e` database): anonymous and non-admin → 404; admin adds an email, it shows in the list and in `invites` with `invited_by`. Runs in CI.
 
 ### Slice 3.3 Object storage
 
-- [ ] 3.3.1 `packages/storage`: `putSnapshot(key, files)`, `getSnapshot(key)`, `putExport(key, zipBuffer)`, `signedDownloadUrl(key, ttl)`; AWS SDK S3 client configured by `STORAGE_REGION` with optional `STORAGE_ENDPOINT` (MinIO in docker-compose for dev); key layout `snapshots/{projectId}/{snapshotId}.json` and `exports/{projectId}/{exportId}.zip` per HOSTING.md §3.
+- [x] 3.3.1 `packages/storage`: `putSnapshot(key, files)`, `getSnapshot(key)`, `putExport(key, zipBuffer)`, `signedDownloadUrl(key, ttl)`; AWS SDK S3 client configured by `STORAGE_REGION` with optional `STORAGE_ENDPOINT` (MinIO in docker-compose for dev); key layout `snapshots/{projectId}/{snapshotId}.json` and `exports/{projectId}/{exportId}.zip` per HOSTING.md §3.
   Verify: integration test against MinIO: round-trip of a 200-file snapshot preserves contents byte-for-byte; signed URL returns 200 then 403 after ttl (use a 2 s ttl); unit test: config with no endpoint targets AWS S3 in the given region.
-- [ ] 3.3.3 AWS S3 buckets for staging and production per HOSTING.md §3: Block Public Access, default encryption, 7-day lifecycle rule on `exports/`, IAM user per environment limited to its bucket, AWS Budgets alert.
+  Verified 2026-10-01 against RustFS instead of MinIO (D20): 200-file snapshot byte-equal (Unicode, tabs, CRLF); signed URL 200 then 403 after a 2 s ttl; unsigned 403; no endpoint → `buildly-staging.s3.ap-southeast-1.amazonaws.com`.
+- [~] 3.3.3 AWS S3 buckets for staging and production per HOSTING.md §3: Block Public Access, default encryption, 7-day lifecycle rule on `exports/`, IAM user per environment limited to its bucket, AWS Budgets alert.
   Verify: from the staging worker, `putSnapshot` then `getSnapshot` succeeds; the same IAM keys are denied on the other environment's bucket; an unsigned object URL returns 403; the lifecycle rule is listed by `aws s3api get-bucket-lifecycle-configuration`.
-- [ ] 3.3.2 Snapshot service in `packages/db` + `packages/storage`: `createSnapshot(projectId, files, parentId, generationId?)` writes storage then row; failure in either leaves no orphan row.
+  Status 2026-10-01: buckets `buildly-staging` and `buildly-prod` (ap-southeast-1) with users `buildly-staging-app` / `buildly-prod-app` and a $5 budget scoped by the `project=buildly` cost allocation tag. With the staging keys: write and byte-equal read-back in staging (SSE-S3), presigned GET 200, unsigned GET 403 on both buckets, put/get/list on `buildly-prod` AccessDenied, bucket-settings reads AccessDenied. Open: the lifecycle rule listing (the app user cannot read bucket config; check with an admin), and `putSnapshot` from the staging worker (needs 3.3.1 and Railway).
+- [x] 3.3.2 Snapshot service in `packages/db` + `packages/storage`: `createSnapshot(projectId, files, parentId, generationId?)` writes storage then row; failure in either leaves no orphan row.
   Verify: integration test with a storage stub that throws: no `snapshots` row is inserted.
+  Verified 2026-10-01: `packages/db/src/snapshot-service.test.ts`: a throwing storage stub inserts no row; a failed insert deletes the stored object.
 
 ### Slice 3.4 Queue and worker skeleton
 
-- [ ] 3.4.1 `jobs` claim with `FOR UPDATE SKIP LOCKED`, heartbeat every 10 s, stale lock (no heartbeat 30 s) requeued once then failed.
+- [x] 3.4.1 `jobs` claim with `FOR UPDATE SKIP LOCKED`, heartbeat every 10 s, stale lock (no heartbeat 30 s) requeued once then failed.
   Verify: integration tests: 5 workers, 1 job → exactly one claim; a job whose worker stops heartbeating is requeued; second stale → failed.
-- [ ] 3.4.2 `apps/worker` main loop with graceful shutdown (finish current job, up to 30 s) and structured JSON logs with `generation_id`.
+  Verified 2026-10-01: `packages/db/src/jobs.test.ts`: 5 concurrent claimers → one claim; stale job requeued, stale again → failed; the old worker can no longer heartbeat or complete it.
+- [x] 3.4.2 `apps/worker` main loop with graceful shutdown (finish current job, up to 30 s) and structured JSON logs with `generation_id`.
   Verify: run worker, enqueue a sleep job, send SIGTERM; log shows job completed then exit 0.
-- [ ] 3.4.3 Cancellation: `jobs.cancel_requested` flag polled by the running job every step; `POST /api/generations/:id/cancel` sets it.
+  Verified 2026-10-01: `apps/worker/src/main.test.ts` spawns the real entry point, enqueues a 1.5 s sleep job, sends SIGTERM: logs show `job completed` after `shutdown requested`, then `worker stopped`, exit 0. Log lines are JSON with `worker_id`, `job_id`, and `generation_id`.
+- [x] 3.4.3 Cancellation: `jobs.cancel_requested` flag polled by the running job every step; `POST /api/generations/:id/cancel` sets it.
   Verify: integration test: cancel during a fake 3-step job → status `cancelled`, later steps not executed.
-- [ ] 3.4.4 Hard timeout of 4 minutes per generation job.
+  Verified 2026-10-01: `apps/worker/src/worker.test.ts`: cancel during step one of a 3-step job → job `cancelled`, steps two and three never run; `POST /api/generations/:id/cancel` sets the flag and records `build.cancelled` (`builds.test.ts`).
+- [x] 3.4.4 Hard timeout of 4 minutes per generation job.
   Verify: unit test with fake timers: job exceeding 240 s → `timed_out`, cleanup called.
+  Verified 2026-10-01: `apps/worker/src/runner.test.ts` with fake timers: nothing at 239.999 s; at 240 s → `timed_out`, signal aborted, cleanup called.
 
 ### Slice 3.5 Usage caps and rate limits
 
-- [ ] 3.5.1 Cap rules in `packages/shared/src/limits.ts`: Free 15 builds/month, 2 projects, 10 builds/hour; Pro 200/month, unlimited projects; per-project one active build. No bring-your-own-key path (D10).
+- [x] 3.5.1 Cap rules in `packages/shared/src/limits.ts`: Free 15 builds/month, 2 projects, 10 builds/hour; Pro 200/month, unlimited projects; per-project one active build. No bring-your-own-key path (D10).
   Verify: unit table test covering every rule and boundary (15th build ok, 16th blocked; month rollover).
-- [ ] 3.5.2 Enforcement in `POST /api/projects/:id/messages` and `POST /api/projects` returning 429/403 with `{ code, message, resetAt }`; worker re-checks on claim.
+  Verified 2026-10-01: `packages/shared/src/limits.test.ts` table: 15th build ok / 16th blocked, 10th/11th in an hour (Free only), Pro 200/201, one active build, project cap, and UTC month rollover including December → January.
+- [x] 3.5.2 Enforcement in `POST /api/projects/:id/messages` and `POST /api/projects` returning 429/403 with `{ code, message, resetAt }`; worker re-checks on claim.
   Verify: integration test: 16th build in a month → 429 `monthly_builds`; `cap.hit` analytics row written.
+  Verified 2026-10-01: `builds.test.ts`: 16th build in a month → 429 `monthly_builds` with `resetAt` 2026-11-01 and a `cap.hit` row; 11th in an hour → 429 `hourly_builds`; third Free project → 403 `projects`. The worker re-check is `recheckBuildCaps` (`packages/db/src/caps.ts`, tested); the generation job handler calls it first (TODO 4.4.1).
 - [-] 3.5.3 Bring-your-own AI key. Dropped: usage is governed only by the plan (D10).
 
 ---
@@ -222,7 +238,7 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.4 Generation loop
 
-- [ ] 4.4.1 State machine per ARCHITECTURE.md §3 implemented as `runGeneration(ctx)` with injectable provider, checker, snack, snapshot store, and clock.
+- [ ] 4.4.1 State machine per ARCHITECTURE.md §3 implemented as `runGeneration(ctx)` with injectable provider, checker, snack, snapshot store, and clock; registered as the worker's `generation` job handler, which first calls `recheckBuildCaps` (TODO 3.5.2) and fails the generation with the cap code if it is over.
   Verify: unit tests with fakes: happy path writes steps `plan, edit, typecheck, bundle, snapshot` and status `succeeded`.
 - [ ] 4.4.2 Repair path: typecheck or bundle failure returns diagnostics to the model; max 2 repairs; then `failed` with `error_detail` containing the last diagnostics.
   Verify: unit tests: fail-fail-pass → succeeded with `repair_attempts = 2`; fail-fail-fail → `failed`, `projects.current_snapshot_id` unchanged.
