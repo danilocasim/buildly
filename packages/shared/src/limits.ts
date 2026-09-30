@@ -1,19 +1,29 @@
-// Plan caps (brief §13, D10). Pure rules: callers pass counts from the database, so the
-// web API and the worker (re-check on claim) apply identical logic. There is no
-// bring-your-own-key path; usage is governed only by the plan.
+// Plan caps and top-up credits (brief §13, D10, D21). Pure rules: callers pass counts
+// from the database, so the web API and the worker (re-check on claim) apply identical
+// logic. Usage is governed only by the plan and top-up build credits; every build runs
+// on Buildly's own OpenAI access.
 import { err, ok, type Result } from "./result";
 
 export type Plan = "free" | "pro";
 
 export const PLAN_LIMITS: Record<
   Plan,
-  { buildsPerMonth: number; buildsPerHour: number | null; projects: number | null }
+  {
+    buildsPerMonth: number;
+    buildsPerHour: number | null;
+    projects: number | null;
+    concurrentBuilds: number;
+  }
 > = {
-  free: { buildsPerMonth: 15, buildsPerHour: 10, projects: 2 },
-  pro: { buildsPerMonth: 200, buildsPerHour: null, projects: null },
+  free: { buildsPerMonth: 15, buildsPerHour: 10, projects: 2, concurrentBuilds: 1 },
+  pro: { buildsPerMonth: 200, buildsPerHour: null, projects: null, concurrentBuilds: 2 },
 };
 
-export type CapCode = "monthly_builds" | "hourly_builds" | "projects" | "generation_active";
+/** A top-up: $5 for 50 build credits that never expire and add to any plan (brief §13). */
+export const TOPUP = { priceUsd: 5, credits: 50 } as const;
+
+export type CapCode =
+  "monthly_builds" | "hourly_builds" | "concurrent_builds" | "projects" | "generation_active";
 
 export interface CapDenied {
   code: CapCode;
@@ -37,7 +47,7 @@ export const HOUR_MS = 60 * 60 * 1000;
 
 export interface BuildUsage {
   plan: Plan;
-  /** Builds consumed since startOfMonthUtc(now). */
+  /** Builds consumed since startOfMonthUtc(now), whether the plan or a credit paid. */
   buildsThisMonth: number;
   /** Builds consumed in the rolling hour before `now`. */
   buildsLastHour: number;
@@ -45,11 +55,22 @@ export interface BuildUsage {
   oldestBuildLastHour?: Date;
   /** Whether the project already has a non-terminal generation. */
   activeGeneration: boolean;
+  /** Non-terminal generations across all of the user's projects. */
+  activeBuildsForUser: number;
+  /** Unspent top-up build credits. */
+  creditBalance: number;
   now: Date;
 }
 
-/** Whether one more build may start. Checked in order: active build, month, hour. */
-export function checkBuild(usage: BuildUsage): Result<void, CapDenied> {
+/** Who pays for an allowed build: the plan's monthly allowance, or one top-up credit. */
+export type PaidBy = "plan" | "credit";
+
+/**
+ * Whether one more build may start, and what pays for it. Checked in order: an active
+ * build on the project, concurrent builds, the monthly allowance (then credits), and the
+ * Free hourly rate limit, an abuse control that applies to credit builds too.
+ */
+export function checkBuild(usage: BuildUsage): Result<{ paidBy: PaidBy }, CapDenied> {
   const limits = PLAN_LIMITS[usage.plan];
   if (usage.activeGeneration) {
     return err({
@@ -59,10 +80,22 @@ export function checkBuild(usage: BuildUsage): Result<void, CapDenied> {
       status: 409,
     });
   }
-  if (usage.buildsThisMonth >= limits.buildsPerMonth) {
+  if (usage.activeBuildsForUser >= limits.concurrentBuilds) {
+    return err({
+      code: "concurrent_builds",
+      message:
+        limits.concurrentBuilds === 1
+          ? "Another of your projects is building. The Free plan runs one build at a time."
+          : `You already have ${limits.concurrentBuilds} builds running. Wait for one to finish.`,
+      resetAt: null,
+      status: 429,
+    });
+  }
+  const allowanceLeft = usage.buildsThisMonth < limits.buildsPerMonth;
+  if (!allowanceLeft && usage.creditBalance <= 0) {
     return err({
       code: "monthly_builds",
-      message: `You have used all ${limits.buildsPerMonth} builds included in your plan this month.`,
+      message: `You have used all ${limits.buildsPerMonth} builds included in your plan this month and have no build credits left. Add a top-up or wait for the monthly reset.`,
       resetAt: startOfNextMonthUtc(usage.now).toISOString(),
       status: 429,
     });
@@ -76,7 +109,7 @@ export function checkBuild(usage: BuildUsage): Result<void, CapDenied> {
       status: 429,
     });
   }
-  return ok(undefined);
+  return ok({ paidBy: allowanceLeft ? "plan" : "credit" });
 }
 
 /** Whether the user may create another (non-archived) project. */

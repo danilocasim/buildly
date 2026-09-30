@@ -261,6 +261,29 @@ export const jobs = pgTable(
   ],
 );
 
+export const creditReasonEnum = pgEnum("credit_reason", ["topup", "grant", "build", "refund"]);
+
+/**
+ * Top-up build credits (brief §13): +N for a purchase or an admin grant, −1 for each build
+ * paid by credit once the plan's monthly allowance is used up. Credits never expire; the
+ * balance is the sum of `delta`.
+ */
+export const buildCredits = pgTable(
+  "build_credits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    delta: integer("delta").notNull(),
+    reason: creditReasonEnum("reason").notNull(),
+    generationId: uuid("generation_id").references(() => generations.id, { onDelete: "set null" }),
+    note: text("note"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("build_credits_user_idx").on(t.userId, t.createdAt)],
+);
+
 export const usageEvents = pgTable(
   "usage_events",
   {

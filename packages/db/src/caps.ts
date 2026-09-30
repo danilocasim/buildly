@@ -3,7 +3,8 @@
 // with the build already recorded and refuses anything over the plan.
 import { eq } from "drizzle-orm";
 import { checkBuild, HOUR_MS, startOfMonthUtc, type CapDenied, type Result } from "@buildly/shared";
-import { usage, type Executor } from "./queries";
+import { paidByCredit } from "./credits";
+import { generations as generationQueries, usage, type Executor } from "./queries";
 import { generations, users } from "./schema";
 
 export async function recheckBuildCaps(
@@ -18,13 +19,17 @@ export async function recheckBuildCaps(
     .where(eq(generations.id, generationId));
   if (!row) throw new Error(`Generation ${generationId} not found`);
   const hourAgo = new Date(now.getTime() - HOUR_MS);
-  // The API recorded this build when it enqueued it, so exclude it from the counts.
-  return checkBuild({
+  // The API recorded this build and marked it active when it enqueued it, so exclude it.
+  // A build already paid by a credit needs no monthly allowance.
+  const result = checkBuild({
     plan: row.plan,
     buildsThisMonth: (await usage.countBuildsSince(db, row.userId, startOfMonthUtc(now))) - 1,
     buildsLastHour: (await usage.countBuildsSince(db, row.userId, hourAgo)) - 1,
     oldestBuildLastHour: await usage.oldestBuildSince(db, row.userId, hourAgo),
     activeGeneration: false,
+    activeBuildsForUser: (await generationQueries.countActiveForUser(db, row.userId)) - 1,
+    creditBalance: (await paidByCredit(db, generationId)) ? 1 : 0,
     now,
   });
+  return result.ok ? { ok: true, value: undefined } : result;
 }

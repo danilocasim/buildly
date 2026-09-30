@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { queue, schema, usage } from "@buildly/db";
+import { credits, queue, schema, usage } from "@buildly/db";
 import { createHarness, type Harness } from "../testing";
 import { cancelGeneration } from "./generations";
 import { postMessage } from "./messages";
@@ -88,7 +88,7 @@ describe("POST /api/projects/:id/messages", () => {
     expect(response.status).toBe(429);
     expect(await response.json()).toEqual({
       code: "monthly_builds",
-      message: "You have used all 15 builds included in your plan this month.",
+      message: expect.stringContaining("used all 15 builds") as string,
       resetAt: "2026-11-01T00:00:00.000Z",
     });
     const hits = await h.t.db
@@ -153,6 +153,67 @@ describe("POST /api/projects/:id/messages", () => {
         )
       ).status,
     ).toBe(401);
+  });
+});
+
+describe("top-up credits and concurrency", () => {
+  it("the 16th build spends one top-up credit instead of failing", async () => {
+    const { user, cookie } = await h.signIn("topped@example.com");
+    const projectId = await newProject(cookie);
+    for (let i = 0; i < 15; i++) {
+      await usage.record(h.t.db, {
+        userId: user.id,
+        type: "build",
+        occurredAt: new Date("2026-10-02T08:00:00Z"),
+      });
+    }
+    await credits.grant(h.t.db, { userId: user.id, amount: 1, reason: "topup" });
+
+    const response = await postMessage(
+      h.request("POST", `/api/projects/${projectId}/messages`, {
+        cookie,
+        body: { content: "one more" },
+      }),
+      h.deps,
+      projectId,
+    );
+    expect(response.status).toBe(202);
+    const body = (await response.json()) as { generationId: string; paidBy: string };
+    expect(body.paidBy).toBe("credit");
+    expect(await credits.balance(h.t.db, user.id)).toBe(0);
+    expect(await credits.paidByCredit(h.t.db, body.generationId)).toBe(true);
+
+    // With the credit spent and the allowance gone, the next build is refused.
+    await finishActiveBuilds(projectId);
+    const next = await postMessage(
+      h.request("POST", `/api/projects/${projectId}/messages`, {
+        cookie,
+        body: { content: "again" },
+      }),
+      h.deps,
+      projectId,
+    );
+    expect(next.status).toBe(429);
+    expect(await next.json()).toMatchObject({ code: "monthly_builds" });
+  });
+
+  it("a Free user building on one project gets 429 concurrent_builds on another", async () => {
+    const { cookie } = await h.signIn("two-projects@example.com");
+    const first = await newProject(cookie, "First");
+    const second = await newProject(cookie, "Second");
+    const post = (projectId: string) =>
+      postMessage(
+        h.request("POST", `/api/projects/${projectId}/messages`, {
+          cookie,
+          body: { content: "go" },
+        }),
+        h.deps,
+        projectId,
+      );
+    expect((await post(first)).status).toBe(202);
+    const blocked = await post(second);
+    expect(blocked.status).toBe(429);
+    expect(await blocked.json()).toMatchObject({ code: "concurrent_builds", resetAt: null });
   });
 });
 

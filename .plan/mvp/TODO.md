@@ -173,9 +173,9 @@ Goal: the boring parts the generator and UI sit on.
 - [x] 3.3.1 `packages/storage`: `putSnapshot(key, files)`, `getSnapshot(key)`, `putExport(key, zipBuffer)`, `signedDownloadUrl(key, ttl)`; AWS SDK S3 client configured by `STORAGE_REGION` with optional `STORAGE_ENDPOINT` (MinIO in docker-compose for dev); key layout `snapshots/{projectId}/{snapshotId}.json` and `exports/{projectId}/{exportId}.zip` per HOSTING.md §3.
   Verify: integration test against MinIO: round-trip of a 200-file snapshot preserves contents byte-for-byte; signed URL returns 200 then 403 after ttl (use a 2 s ttl); unit test: config with no endpoint targets AWS S3 in the given region.
   Verified 2026-10-01 against RustFS instead of MinIO (D20): 200-file snapshot byte-equal (Unicode, tabs, CRLF); signed URL 200 then 403 after a 2 s ttl; unsigned 403; no endpoint → `buildly-staging.s3.ap-southeast-1.amazonaws.com`.
-- [~] 3.3.3 AWS S3 buckets for staging and production per HOSTING.md §3: Block Public Access, default encryption, 7-day lifecycle rule on `exports/`, IAM user per environment limited to its bucket, AWS Budgets alert.
-  Verify: from the staging worker, `putSnapshot` then `getSnapshot` succeeds; the same IAM keys are denied on the other environment's bucket; an unsigned object URL returns 403; the lifecycle rule is listed by `aws s3api get-bucket-lifecycle-configuration`.
-  Status 2026-10-01: buckets `buildly-staging` and `buildly-prod` (ap-southeast-1) with users `buildly-staging-app` / `buildly-prod-app` and a $5 budget scoped by the `project=buildly` cost allocation tag. With the staging keys: write and byte-equal read-back in staging (SSE-S3), presigned GET 200, unsigned GET 403 on both buckets, put/get/list on `buildly-prod` AccessDenied, bucket-settings reads AccessDenied. Open: the lifecycle rule listing (the app user cannot read bucket config; check with an admin), and `putSnapshot` from the staging worker (needs 3.3.1 and Railway).
+- [x] 3.3.3 AWS S3 buckets for staging and production per HOSTING.md §3: Block Public Access, default encryption, 7-day lifecycle rule on `exports/`, IAM user per environment limited to its bucket, AWS Budgets alert.
+  Verify: with the staging keys, `packages/storage` `putSnapshot` then `getSnapshot` succeeds against `buildly-staging`; the same IAM keys are denied on the other environment's bucket; an unsigned object URL returns 403; the lifecycle rule is listed in both buckets. (The same check from the deployed staging worker is part of 9.1.1's `/api/health`.)
+  Status 2026-10-01: buckets `buildly-staging` and `buildly-prod` (ap-southeast-1) with users `buildly-staging-app` / `buildly-prod-app` and a $5 budget scoped by the `project=buildly` cost allocation tag. With the staging keys: `packages/storage` `putSnapshot` → `getSnapshot` byte-equal and a signed URL 200 against `buildly-staging` (SSE-S3); unsigned GET 403 on both buckets; put/get/list on `buildly-prod` AccessDenied; bucket-settings reads AccessDenied. Lifecycle rule `expire-exports` (prefix `exports/`, 7 days) confirmed in both buckets by the founder in the AWS console on 2026-10-01; the app user cannot read bucket config, by design.
 - [x] 3.3.2 Snapshot service in `packages/db` + `packages/storage`: `createSnapshot(projectId, files, parentId, generationId?)` writes storage then row; failure in either leaves no orphan row.
   Verify: integration test with a storage stub that throws: no `snapshots` row is inserted.
   Verified 2026-10-01: `packages/db/src/snapshot-service.test.ts`: a throwing storage stub inserts no row; a failed insert deletes the stored object.
@@ -197,13 +197,15 @@ Goal: the boring parts the generator and UI sit on.
 
 ### Slice 3.5 Usage caps and rate limits
 
-- [x] 3.5.1 Cap rules in `packages/shared/src/limits.ts`: Free 15 builds/month, 2 projects, 10 builds/hour; Pro 200/month, unlimited projects; per-project one active build. No bring-your-own-key path (D10).
+- [x] 3.5.1 Cap rules in `packages/shared/src/limits.ts`: Free 15 builds/month, 2 projects, 10 builds/hour; Pro 200/month, unlimited projects; concurrent builds Free 1 / Pro 2; per-project one active build. Usage is governed only by the plan and top-up build credits (3.5.3, D10, D21).
   Verify: unit table test covering every rule and boundary (15th build ok, 16th blocked; month rollover).
-  Verified 2026-10-01: `packages/shared/src/limits.test.ts` table: 15th build ok / 16th blocked, 10th/11th in an hour (Free only), Pro 200/201, one active build, project cap, and UTC month rollover including December → January.
+  Verified 2026-10-01: `packages/shared/src/limits.test.ts` table: 15th build ok / 16th blocked, 10th/11th in an hour (Free only), Pro 200/201, concurrent builds (Free 1, Pro 2), one active build per project, project cap, and UTC month rollover including December → January.
 - [x] 3.5.2 Enforcement in `POST /api/projects/:id/messages` and `POST /api/projects` returning 429/403 with `{ code, message, resetAt }`; worker re-checks on claim.
   Verify: integration test: 16th build in a month → 429 `monthly_builds`; `cap.hit` analytics row written.
   Verified 2026-10-01: `builds.test.ts`: 16th build in a month → 429 `monthly_builds` with `resetAt` 2026-11-01 and a `cap.hit` row; 11th in an hour → 429 `hourly_builds`; third Free project → 403 `projects`. The worker re-check is `recheckBuildCaps` (`packages/db/src/caps.ts`, tested); the generation job handler calls it first (TODO 4.4.1).
-- [-] 3.5.3 Bring-your-own AI key. Dropped: usage is governed only by the plan (D10).
+- [x] 3.5.3 Top-up build credits (brief §13, D21): a `build_credits` ledger (grants and top-ups add, each build past the plan's monthly allowance spends one, credits never expire); `checkBuild` allows a build while allowance or credits remain and reports which pays; the credit is spent in the build's transaction with the user row locked; `/api/me` shows the balance; `pnpm db:grant-credits` for admin grants until Stripe (D11).
+  Verify: unit table: allowance first, then credits, and credits do not bypass the Free hourly limit; integration: 16th build with a credit → 202 and balance −1, then 429; two builds racing for the last credit → exactly one spends it.
+  Verified 2026-10-01: `packages/shared/src/limits.test.ts` ("who pays" and credit rows); `packages/db/src/credits.test.ts` (grant/spend/stop at zero, the race); `apps/web/src/server/handlers/builds.test.ts` (16th build paid by credit → 202 `paidBy: credit`, then 429 `monthly_builds`); the worker re-check accepts credit-paid builds (`caps.test.ts`).
 
 ---
 
@@ -461,7 +463,7 @@ Check each only with the evidence named.
 
 ### Slice 9.2 Beta cohort
 
-- [ ] 9.2.1 Invite ten developers and indie builders; each gets the Free cap with a manual bump to 50 builds for the beta.
+- [ ] 9.2.1 Invite ten developers and indie builders; each gets the Free plan plus 35 top-up credits (`pnpm db:grant-credits <email> 35 beta`), so 50 builds in the first month.
   Verify: ten `invites` rows accepted.
 - [ ] 9.2.2 Feedback capture: an in-app "Report a problem" link that attaches `generation_id`, plus a weekly 20-minute call with three users.
   Verify: at least one report received through the link.
@@ -472,7 +474,7 @@ Check each only with the evidence named.
 
 ## Post-MVP backlog (not scheduled)
 
-- Billing: Stripe Checkout, customer portal, plan sync to `users.plan`, top-up credits ledger, attribution toggle by plan (brief §13).
+- Billing: Stripe Checkout, customer portal, plan sync to `users.plan`, top-up purchases that write `topup` rows to the existing credits ledger (3.5.3, D21), attribution toggle by plan (brief §13).
 - Fallback web runner if Snack becomes unreliable (brief §8).
 - Real data migrations in the foundation store (brief §7).
 - Editable code panel; theme controls; more starters; a second foundation.

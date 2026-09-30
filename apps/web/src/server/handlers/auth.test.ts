@@ -156,7 +156,7 @@ describe("GET /api/me", () => {
       email: "me@example.com",
       plan: "free",
       isAdmin: false,
-      usage: { buildsThisMonth: 0, buildsPerMonth: 15 },
+      usage: { buildsThisMonth: 0, buildsPerMonth: 15, credits: 0 },
     });
     expect(JSON.stringify(body)).not.toContain("someone-else@example.com");
   });

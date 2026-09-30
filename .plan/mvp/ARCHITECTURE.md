@@ -43,7 +43,8 @@ Package manager: pnpm (versions pinned once in the `catalog:` of `pnpm-workspace
 | `generations` | id, project_id, user_id, status, trigger_message_id, base_snapshot_id, result_snapshot_id nullable, repair_attempts, model, input_tokens, cached_tokens, output_tokens, cost_usd, error_code nullable, error_detail nullable, started_at, finished_at | One row per **build** |
 | `generation_steps` | id, generation_id, step (`plan`/`edit`/`typecheck`/`bundle`/`repair`/`snapshot`), status, detail jsonb, started_at, finished_at | Feeds the progress UI; only written when the step actually completes |
 | `jobs` | id, type, payload jsonb, status (`queued`/`running`/`done`/`failed`/`cancelled`), attempts, locked_by, locked_at, heartbeat_at, run_after, created_at | Queue table, claimed with `FOR UPDATE SKIP LOCKED` |
-| `usage_events` | id, user_id, project_id nullable, type, quantity, occurred_at | Builds consumed, exports, phone opens |
+| `usage_events` | id, user_id, project_id nullable, type, quantity, occurred_at | Builds consumed (every build, whoever pays), exports, phone opens |
+| `build_credits` | id, user_id, delta, reason (`topup`/`grant`/`build`/`refund`), generation_id nullable, note, created_at | Top-up credit ledger (D21); balance = sum of `delta`; a build past the monthly allowance spends one |
 | `analytics_events` | id, user_id nullable, project_id nullable, name, props jsonb, occurred_at | See METRICS.md |
 
 Generation `status` values: `queued`, `planning`, `editing`, `checking`, `bundling`, `repairing`, `succeeded`, `failed`, `cancelled`, `timed_out`.
