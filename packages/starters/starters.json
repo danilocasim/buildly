@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "journal",
+    "name": "Journal",
+    "description": "A calm journal with moods, tags, and search.",
+    "thumbnail": "thumbnails/journal.png",
+    "screens": ["Entries", "Entry detail", "New entry", "Tags"],
+    "models": ["Entry", "Tag"]
+  },
+  {
+    "slug": "habit-tracker",
+    "name": "Habit Tracker",
+    "description": "Daily check-ins with streaks and a history of every check-in.",
+    "thumbnail": "thumbnails/habit-tracker.png",
+    "screens": ["Today", "Habits", "Habit detail", "History"],
+    "models": ["Habit", "CheckIn"]
+  },
+  {
+    "slug": "inventory",
+    "name": "Inventory",
+    "description": "Track stock by location, adjust quantities, and search by name or SKU.",
+    "thumbnail": "thumbnails/inventory.png",
+    "screens": ["Items", "Item detail", "Adjust stock", "Search"],
+    "models": ["Item", "Adjustment"]
+  }
+]

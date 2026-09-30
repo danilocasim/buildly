@@ -65,56 +65,75 @@ Goal: the one Expo foundation every generated app is built on, three starters as
 
 ### Slice 2.1 Foundation app shell
 
-- [ ] 2.1.1 `packages/foundation` Expo project pinned to the S2 SDK: `App.tsx` with NavigationContainer, bottom tabs, native stack, `ThemeProvider`, `StatusBar`, and an error boundary plus global error handler that `console.error` runtime errors with file and message (Snack does not report runtime errors to the SDK, SPIKES.md S1).
+- [x] 2.1.1 `packages/foundation` Expo project pinned to the S2 SDK: `App.tsx` with NavigationContainer, bottom tabs, native stack, `ThemeProvider`, `StatusBar`, and an error boundary plus global error handler that `console.error` runtime errors with file and message (Snack does not report runtime errors to the SDK, SPIKES.md S1).
   Verify: `pnpm --filter foundation typecheck` exits 0; `pnpm --filter foundation test` renders `App` with RNTL without throwing.
-- [ ] 2.1.2 `src/theme`: tokens from brief §3 mapped to RN values, spacing and type scales, `useTheme()`.
+  Verified 2026-09-30: `pnpm --filter foundation typecheck` exits 0; `test/app.test.tsx` renders `App` (store opens, Home and About tabs).
+- [x] 2.1.2 `src/theme`: tokens from brief §3 mapped to RN values, spacing and type scales, `useTheme()`.
   Verify: unit test snapshot of the token object; a11y contrast check for text on background ≥ 4.5:1 computed in the test.
-- [ ] 2.1.3 Component kit: `Screen`, `Card`, `ListRow`, `Button`, `TextField`, `EmptyState`, `FAB`, each with typed props and a `testID`.
+  Verified 2026-09-30: `test/theme.test.ts` snapshots the tokens and checks 8 text/background pairs at ≥ 4.5:1. White on the brief's orange is 2.96:1, so filled accent buttons use near-black text (`onAccent`) and accent text uses `accentText` (#C2410C); `danger` (#DC2626) is added.
+- [x] 2.1.3 Component kit: `Screen`, `Card`, `ListRow`, `Button`, `TextField`, `EmptyState`, `FAB`, each with typed props and a `testID`.
   Verify: RNTL test per component: renders, fires `onPress`/`onChangeText`, respects `disabled`.
-- [ ] 2.1.4 About screen with a "Made with Buildly" line controlled by `app.json` extra `showAttribution` (true by default; Phase 6 export toggles it for Pro).
+  Verified 2026-09-30: `test/components.test.tsx` covers render, press/changeText, and disabled for all seven.
+- [x] 2.1.4 About screen with a "Made with Buildly" line controlled by `app.json` extra `showAttribution` (true by default; Phase 6 export toggles it for Pro).
   Verify: RNTL test: attribution visible when flag true, absent when false.
+  Verified 2026-09-30: `test/about.test.tsx` (flag true, default, false). `AboutScreen` imports `app.json` directly (Snack loads JSON files as modules), so previews and exports read the same flag.
 
 ### Slice 2.2 Typed document store
 
-- [ ] 2.2.1 `src/data/store.ts`: `defineCollection<T>()`, `createRepository()` with `list`, `get`, `create`, `update`, `remove`, `search`, backed by AsyncStorage with one key per collection and an in-memory cache.
+- [x] 2.2.1 `src/data/store.ts`: `defineCollection<T>()`, `createRepository()` with `list`, `get`, `create`, `update`, `remove`, `search`, backed by AsyncStorage with one key per collection and an in-memory cache.
   Verify: unit tests with `@react-native-async-storage/async-storage/jest/async-storage-mock`: CRUD round-trip; `search` is case-insensitive over declared fields; ids are unique across 1,000 creates.
-- [ ] 2.2.2 `schemaVersion` handling: `openStore({ schemaVersion, seed })` compares the stored version, reseeds on mismatch, and sets a `didReseed` flag for a one-time notice.
+  Verified 2026-09-30: `test/store.test.tsx` with the AsyncStorage mock: CRUD round-trip, restart persistence, case-insensitive search over declared fields, 1,000 unique ids.
+- [x] 2.2.2 `schemaVersion` handling: `openStore({ schemaVersion, seed })` compares the stored version, reseeds on mismatch, and sets a `didReseed` flag for a one-time notice.
   Verify: unit tests: same version keeps data; bumped version reseeds and `didReseed` is true once, false on next open.
-- [ ] 2.2.3 `reset()` and `seed.ts` conventions; demo records carry `isDemo: true` and the UI shows a "Demo data" pill on Home tabs while any demo record exists.
+  Verified 2026-09-30: same version keeps data; bumped version reseeds with `didReseed` true once, then false; collections dropped by the new schema are wiped.
+- [x] 2.2.3 `reset()` and `seed.ts` conventions; demo records carry `isDemo: true` and the UI shows a "Demo data" pill on Home tabs while any demo record exists.
   Verify: unit test: after `reset()` only demo records exist; RNTL test: pill visible with demo data, hidden after all demo records are removed.
-- [ ] 2.2.4 Persistence on device (manual until Detox exists).
+  Verified 2026-09-30: after `reset()` only demo records remain; `DemoDataPill` shows with demo data and hides once they are removed.
+- [x] 2.2.4 Persistence on device (manual until Detox exists).
   Verify: **manual** in Expo Go: create a record, force-quit, reopen, record is present. Record device and date in this line.
+  Verified 2026-10-01: Journal starter on the foundation in store Expo Go, Android (model 2412DPC0AG): created "Device test", force-quit, reopened, entry present; no runtime errors reported. iPhone not tested.
 
 ### Slice 2.3 Foundation contract
 
-- [ ] 2.3.1 `foundation.json`: `sdkVersion`, `dependencies` allowlist with pinned versions, `layout` rules (writable globs, read-only globs, forbidden files), `smokeChecks` command, `schemaVersionRule` text.
+- [x] 2.3.1 `foundation.json`: `sdkVersion`, `dependencies` allowlist with pinned versions, `layout` rules (writable globs, read-only globs, forbidden files), `smokeChecks` command, `schemaVersionRule` text.
   Verify: unit test validates the file against a zod schema in `packages/shared`; test asserts allowlist keys equal `package.json` dependency keys exactly.
-- [ ] 2.3.2 API digest generator `scripts/build-api-digest.ts` producing `dist/api-digest.md` from exported component props, store signatures, and navigation registration pattern.
+  Verified 2026-09-30: `test/manifest.test.ts` parses it with `foundationManifestSchema` (`packages/shared`), asserts allowlist keys equal `package.json` dependency keys and versions equal the pnpm `foundation` catalog.
+- [x] 2.3.2 API digest generator `scripts/build-api-digest.ts` producing `dist/api-digest.md` from exported component props, store signatures, and navigation registration pattern.
   Verify: snapshot test of the digest; CI fails if the digest is stale (`git diff --exit-code` after regenerate).
-- [ ] 2.3.3 README for exported projects: run steps, folder layout, how demo data and `schemaVersion` work.
+  Verified 2026-09-30: generator at `packages/foundation/scripts/build-api-digest.ts` (`pnpm --filter foundation digest`); `test/api-digest.test.ts` snapshots it and fails if the committed digest is stale; CI regenerates and runs `git diff --exit-code`.
+- [x] 2.3.3 README for exported projects: run steps, folder layout, how demo data and `schemaVersion` work.
   Verify: reviewed against the export acceptance check in 6.3.4.
+  Verified 2026-09-30: `packages/foundation/export/README.md` reviewed against 6.3.4's steps (npm install, npx expo start, Expo Go, tsc); a manifest test keeps those steps and the placeholders in it. 6.3.4 exercises it for real.
 
 ### Slice 2.4 Starters as fixtures
 
-- [ ] 2.4.1 `packages/starters/journal`: Entries, Entry detail, New entry, Tags; models Entry, Tag; seed ≥ 3 entries.
+- [x] 2.4.1 `packages/starters/journal`: Entries, Entry detail, New entry, Tags; models Entry, Tag; seed ≥ 3 entries.
   Verify: assembled with the foundation, `tsc --noEmit` exits 0; RNTL smoke: tabs navigate, create an entry, list shows it, search filters.
-- [ ] 2.4.2 `packages/starters/habit-tracker`: Today, Habits, Habit detail, History; models Habit, CheckIn; streak logic.
+  Verified 2026-09-30: `packages/checker/src/starters.test.ts` assembles it on the foundation, `tsc` 0 diagnostics; `packages/starters/test/journal.test.tsx` (tabs, create, list, search, delete).
+- [x] 2.4.2 `packages/starters/habit-tracker`: Today, Habits, Habit detail, History; models Habit, CheckIn; streak logic.
   Verify: tsc 0; RNTL smoke: check in today, streak increments, history lists the check-in; unit test for streak across a gap day.
-- [ ] 2.4.3 `packages/starters/inventory`: Items, Item detail, Adjust stock, Search; models Item, Adjustment.
+  Verified 2026-09-30: `tsc` 0 via the checker; `test/habit-tracker.test.tsx` (check in, streak 2 → 3, History lists it) plus streak unit tests across a gap day, month ends, and DST.
+- [x] 2.4.3 `packages/starters/inventory`: Items, Item detail, Adjust stock, Search; models Item, Adjustment.
   Verify: tsc 0; RNTL smoke: adjust −2 lowers quantity and records an Adjustment; search finds by name.
-- [ ] 2.4.4 Starter manifest `starters.json` (slug, name, description, thumbnail path, screen names) consumed by the web app.
+  Verified 2026-09-30: `tsc` 0 via the checker; `test/inventory.test.tsx` (−2 lowers 24 → 22 and records an Adjustment; below zero refused; search by name).
+- [x] 2.4.4 Starter manifest `starters.json` (slug, name, description, thumbnail path, screen names) consumed by the web app.
   Verify: unit test: every slug has a directory, a thumbnail file, and a passing smoke test entry.
-- [ ] 2.4.5 Each starter runs in Snack on web and Expo Go.
+  Verified 2026-09-30: `packages/starters/starters.json` validated by `starterManifestSchema`; `test/manifest.test.ts` checks each directory, thumbnail PNG (rendered from the real app on web, see `thumbnails/README.md`), smoke test, and registered screens.
+- [~] 2.4.5 Each starter runs in Snack on web and Expo Go.
   Verify: **manual** using the S1 spike page pointed at each starter; note date and devices here.
+  Status 2026-10-01: **Expo Go passes** for all three on Android (model 2412DPC0AG, store Expo Go): Journal (create, persist), Habit Tracker (check in, streak 2 → 3, History), Inventory (−2 → 22, search "hdmi"); no runtime errors. Sessions came from `spikes/snack-sdk-check/online.ts` (same files as the spike page). The first run found that Expo Go shares AsyncStorage across Snacks, so the store now scopes keys by `app.json` `expo.slug`. **Snack web is blocked** by the hosted player's origin allowlist (SPIKES.md S1) until the self-hosted player (4b.0.1); each starter already renders on web via `expo export` (thumbnails). iPhone not tested.
 
 ### Slice 2.5 Checker
 
-- [ ] 2.5.1 `packages/checker`: `assembleProject(foundationFiles, projectFiles, tmpDir)` with symlinked pre-baked `node_modules`; `runTypecheck(tmpDir)` returning `{ ok, diagnostics: [{ file, line, col, code, message }] }`; 60 s timeout; no npm scripts executed.
+- [x] 2.5.1 `packages/checker`: `assembleProject(foundationFiles, projectFiles, tmpDir)` with symlinked pre-baked `node_modules`; `runTypecheck(tmpDir)` returning `{ ok, diagnostics: [{ file, line, col, code, message }] }`; 60 s timeout; no npm scripts executed.
   Verify: unit tests: clean journal starter → `ok: true`; injected `const x: number = "a"` → one diagnostic with the right file and line; a timeout fixture returns `ok: false, errorCode: 'timeout'`.
-- [ ] 2.5.2 Normalized diagnostic shape shared with Snack bundle errors (`packages/shared/src/diagnostics.ts`).
+  Verified 2026-09-30: `packages/checker/src/index.test.ts`: bare template ok; injected error → one TS2322 diagnostic at the right file and line; 1 ms limit → `timeout`; unsafe or foundation-overriding paths refused. All three starters pass.
+- [x] 2.5.2 Normalized diagnostic shape shared with Snack bundle errors (`packages/shared/src/diagnostics.ts`).
   Verify: unit test converts a sample Snack error payload and a tsc diagnostic to the same shape.
-- [ ] 2.5.3 Worker Dockerfile (or host setup script) that pre-installs foundation `node_modules` at build time.
+  Verified 2026-09-30: `packages/shared/src/diagnostics.test.ts` maps a Snack error payload and a tsc line to the same shape; the foundation's runtime-error log lines parse too.
+- [x] 2.5.3 Worker Dockerfile (or host setup script) that pre-installs foundation `node_modules` at build time.
   Verify: container build succeeds; `docker run … pnpm checker:selftest` runs the journal starter check in under 15 s warm.
+  Verified 2026-09-30: `apps/worker/Dockerfile` builds (pnpm fetch + offline install); `docker run --cpus=1 --memory=2g buildly-worker pnpm checker:selftest` → journal ok, cold 2.0 s, warm 1.8 s (arm64).
 
 ---
 

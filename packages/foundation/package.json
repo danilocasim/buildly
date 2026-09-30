@@ -3,16 +3,38 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "The Expo foundation every generated app is built on. App.tsx, app.json, tsconfig.json, and src/ ship to Snack and exports; lib/ and test/ stay in the repo.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./lib/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p test && tsc --noEmit -p lib && tsc --noEmit -p scripts",
+    "test": "jest",
+    "digest": "tsx scripts/build-api-digest.ts"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "catalog:foundation",
+    "@react-native-async-storage/async-storage": "catalog:foundation",
+    "@react-navigation/bottom-tabs": "catalog:foundation",
+    "@react-navigation/native": "catalog:foundation",
+    "@react-navigation/native-stack": "catalog:foundation",
+    "expo": "catalog:foundation",
+    "expo-status-bar": "catalog:foundation",
+    "react": "catalog:foundation",
+    "react-native": "catalog:foundation",
+    "react-native-safe-area-context": "catalog:foundation",
+    "react-native-screens": "catalog:foundation"
   },
   "devDependencies": {
+    "@buildly/shared": "workspace:*",
+    "@testing-library/react-native": "catalog:foundation",
+    "@types/jest": "catalog:foundation",
     "@types/node": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/react": "catalog:foundation",
+    "jest": "catalog:foundation",
+    "jest-expo": "catalog:foundation",
+    "react-test-renderer": "catalog:foundation",
+    "tsx": "catalog:",
+    "typescript": "catalog:foundation"
   }
 }

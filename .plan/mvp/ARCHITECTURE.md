@@ -25,7 +25,9 @@ buildly/
   .plan/                 This plan
 ```
 
-Package manager: pnpm (versions pinned once in the `catalog:` of `pnpm-workspace.yaml`). Node 22 LTS. TypeScript strict everywhere, every package extending `tsconfig.base.json`; TypeScript stays on 6.0.x until typescript-eslint supports 7. Packages are named `@buildly/<dir>` and export their TypeScript source directly (no build step for internal packages). Tests: Vitest for unit and integration, Playwright for web e2e, React Native Testing Library for foundation and starter smoke tests.
+Package manager: pnpm (versions pinned once in the `catalog:` of `pnpm-workspace.yaml`; the Expo foundation's versions in the named `catalog:foundation`, kept equal to `foundation.json` by a test). Node 22 LTS. TypeScript strict everywhere, every package extending `tsconfig.base.json`; TypeScript stays on 6.0.x until typescript-eslint supports 7. Packages are named `@buildly/<dir>` and export their TypeScript source directly (no build step for internal packages). Tests: Vitest for unit and integration, Playwright for web e2e, React Native Testing Library on Jest (`jest-expo`) for the foundation and starters (D19).
+
+`packages/foundation` ships `App.tsx`, `app.json`, `tsconfig.json`, and `src/` to Snack and exports; `lib/` (Node loaders), `scripts/` (API digest), `export/README.md` (export README template), `dist/api-digest.md`, and `test/` never ship. `packages/starters/<slug>/src/` holds only project-owned files; their tests overlay them on the foundation with a Jest resolver, and the checker type-checks each real assembly.
 
 ## 2. Data model (Postgres)
 
@@ -81,6 +83,8 @@ Rules the code must enforce:
 
 Rejections are returned to the model as tool errors with a reason, and count toward a per-run rejection budget (10) after which the run fails.
 
+The layout, allowlist, forbidden files, and schema-version rule live in `packages/foundation/foundation.json` (schema: `foundationManifestSchema` in `packages/shared`). Project files must keep this contract with the read-only `App.tsx`: `src/navigation.tsx` exports `RootNavigator`, `src/data/models.ts` exports `schemaVersion`, and `src/data/seed.ts` exports `seed()`.
+
 ## 5. Context builder
 
 Input order, with a token budget of 80k input tokens per turn:
@@ -97,7 +101,9 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 
 - One Snack session per project, created lazily on first successful generation, updated on every snapshot change and on restore.
 - `sdkVersion` is pinned in `packages/foundation/foundation.json` (54.0.0, D17) and must be one the published `snack-sdk` accepts (SPIKES.md S2); `SNACK_SDK_VERSION` must equal it.
-- The worker reads bundle and runtime errors from the session's state and normalizes them into the same diagnostic shape the checker uses.
+- The worker reads bundle errors from the session's state and normalizes them into the same diagnostic shape the checker uses (`packages/shared/src/diagnostics.ts`). Snack does not report runtime errors (SPIKES.md S1), so the foundation logs each one as a `[buildly:runtime-error] {json}` console line, which the log listener parses with `fromRuntimeLog`.
+- Files sent are the foundation files (including `app.json`) plus the project files; dependencies are the `foundation.json` allowlist minus `react`, `react-native`, and `expo`, which the runtime provides.
+- Each project's `app.json` gets a unique `expo.slug` (derived from the project id). Expo Go shares one AsyncStorage between every Snack on a phone, and the store scopes all keys by that slug, so two previews never read each other's data or `schemaVersion`.
 - The web app receives `webPreviewURL` and the online `url` over the project API; the iframe is rendered only with the SDK's web preview reference wiring.
 - Web preview uses Buildly's self-hosted build of the Snack web player (`webPlayerURL`, D18) because Snack's hosted player only talks to Expo's allowlisted origins. It lives on its own registrable domain, since it runs generated code in the user's browser. Expo Go uses Snack directly.
 - Snack sessions never receive secrets. Files sent are exactly the foundation plus project files.
@@ -123,7 +129,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 
 - OpenAI key, storage credentials, and DB URL exist only in the worker and server runtime env. A CI test greps the built client bundle and every export ZIP for key prefixes and env names.
 - The web player iframe is sandboxed; the workspace page sets a CSP that allows only the self-hosted player origin for `frame-src`.
-- Generated code never runs on Buildly servers. The checker runs `tsc` only, with a 60-second timeout and no scripts.
+- Generated code never runs on Buildly servers. The checker runs `tsc` only, with a 60-second timeout and no scripts, against the foundation `node_modules` baked into the worker image (`apps/worker/Dockerfile`, `CHECKER_NODE_MODULES`).
 - Rate limits and caps are enforced in the API before a job is enqueued, and re-checked by the worker on claim.
 
 ## 9. Environment variables

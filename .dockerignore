@@ -1,0 +1,11 @@
+**/node_modules
+**/.next
+**/.next-prod
+.git
+.github
+.plan
+docs
+spikes
+**/*.tsbuildinfo
+.env
+.env.*

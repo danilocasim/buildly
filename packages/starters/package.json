@@ -3,16 +3,37 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "description": "Journal, Habit Tracker, and Inventory as project-file sets on the foundation. Each <slug>/src/ holds only project-owned files; lib/ loads them; test/ runs RNTL smoke tests against the real foundation.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./lib/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p test && tsc --noEmit -p lib",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@buildly/foundation": "workspace:*",
+    "@buildly/shared": "workspace:*"
   },
   "devDependencies": {
+    "@expo/vector-icons": "catalog:foundation",
+    "@react-native-async-storage/async-storage": "catalog:foundation",
+    "@react-navigation/bottom-tabs": "catalog:foundation",
+    "@react-navigation/native": "catalog:foundation",
+    "@react-navigation/native-stack": "catalog:foundation",
+    "@testing-library/react-native": "catalog:foundation",
+    "@types/jest": "catalog:foundation",
     "@types/node": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/react": "catalog:foundation",
+    "expo": "catalog:foundation",
+    "expo-status-bar": "catalog:foundation",
+    "jest": "catalog:foundation",
+    "jest-expo": "catalog:foundation",
+    "react": "catalog:foundation",
+    "react-native": "catalog:foundation",
+    "react-native-safe-area-context": "catalog:foundation",
+    "react-native-screens": "catalog:foundation",
+    "react-test-renderer": "catalog:foundation",
+    "typescript": "catalog:foundation"
   }
 }

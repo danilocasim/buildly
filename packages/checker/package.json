@@ -8,11 +8,18 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "selftest": "tsx src/selftest.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@buildly/foundation": "workspace:*",
+    "@buildly/shared": "workspace:*",
+    "@buildly/starters": "workspace:*",
+    "tsx": "catalog:"
   }
 }
