@@ -21,9 +21,9 @@ Goal: an empty but fully wired monorepo where every later slice has a home and C
 
 ### Slice 0.2 Continuous integration
 
-- [~] 0.2.1 GitHub Actions workflow: install, lint, typecheck, unit tests, on PR and main.
+- [x] 0.2.1 GitHub Actions workflow: install, lint, typecheck, unit tests, on PR and main.
   Verify: open a PR with a deliberate lint error and see the check fail; fix and see it pass.
-  Status: `.github/workflows/ci.yml` written. PR #1 run 36721786854 passed after the fix, but the lint-probe run (36721760100) was cancelled before it started by the workflow's `cancel-in-progress` when the fix was pushed 14 s later, so the failing check was never observed. Redo the probe and wait for it to fail before pushing the fix.
+  Verified 2026-09-30 on PR #1: lint-probe run 36722855715 failed at the Lint step (`no-unused-vars` in `packages/db/src/lint-probe.ts`); fix run 36722999362 passed. Push a fix only after the probe run finishes: `cancel-in-progress` cancels the older run on the same branch.
 - [x] 0.2.2 Cache pnpm store and `packages/foundation/node_modules` in CI.
   Verify: second CI run of an unchanged lockfile finishes install in under 60 s (read from the job log).
   Verified 2026-09-30 on PR #1: run 36721742630 saved both caches; run 36721786854 hit both caches and `pnpm install --frozen-lockfile` finished in 1.1 s.
