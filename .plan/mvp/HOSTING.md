@@ -62,7 +62,7 @@ OpenAI is the only line that grows with usage, and model routing is what keeps i
 
 ### AWS S3
 
-- One bucket per environment, for example `buildly-staging` and `buildly-prod`, in `ap-southeast-1`.
+- One bucket per environment: **`buildly-staging`** and **`buildly-prod`** (created 2026-10-01), in `ap-southeast-1`. Both are tagged `project=buildly`; the tag is a cost allocation tag so the budget below can track only these buckets.
 - Block Public Access on. Default encryption (SSE-S3) on.
 - Object layout:
 
@@ -93,7 +93,7 @@ OpenAI is the only line that grows with usage, and model routing is what keeps i
   }
   ```
 
-- Set an AWS Budgets alert (for example $5/month) so an unexpected spike is visible.
+- Set an AWS Budgets alert (for example $5/month) so an unexpected spike is visible. The AWS account is shared, so the budget filters on the `project=buildly` tag (Budgets cannot filter by bucket); a new tag takes up to 24 hours to become selectable.
 - Local development keeps using MinIO in docker-compose.
 
 ### Resend
