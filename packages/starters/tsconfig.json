@@ -1,7 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../foundation/tsconfig.json",
   "compilerOptions": {
-    "types": ["node"]
+    // Starter files import foundation files ("./store", "../components") relatively;
+    // rootDirs resolves them as in an assembled app.
+    "rootDirs": ["../foundation", "journal", "habit-tracker", "inventory"]
   },
-  "include": ["src", "vitest.config.ts"]
+  "include": ["*/src/**/*"]
 }

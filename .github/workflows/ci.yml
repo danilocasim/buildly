@@ -44,3 +44,7 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
+      # The committed API digest must match the foundation source (TODO 2.3.2).
+      - name: API digest is up to date
+        run: pnpm --filter foundation digest && git diff --exit-code packages/foundation/dist/api-digest.md

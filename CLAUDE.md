@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Buildly is an AI mobile app builder: a user describes an app or picks a starter, the AI generates a React Native + Expo + TypeScript project, the user previews it in the browser and in Expo Go, refines it in chat, and exports the source.
 
-**The repo is early in implementation.** TODO Phase 0 has scaffolded the pnpm workspace: every `apps/*` and `packages/*` package exists, but only `packages/shared` (events, `Result`, `loadConfig`) and `scripts/check-no-secrets.ts` have real code. The rest are empty placeholders until their phase.
+**The repo is in implementation.** Phases 0–2 are done except two on-device checks: the workspace and CI, the spikes (`spikes/`, results in SPIKES.md), the Expo foundation (`packages/foundation`), three starters (`packages/starters`), and the type checker (`packages/checker`). `packages/shared` holds events, `Result`, `loadConfig`, diagnostics, and the foundation/starter manifest schemas. `apps/*` and the other packages are placeholders until their phase.
 
 | Path | Role |
 | --- | --- |
@@ -77,17 +77,31 @@ Run from the repo root (Node 22, pnpm 9):
 pnpm install && pnpm typecheck         # tsc --noEmit in every package
 pnpm lint                              # ESLint (type-aware) + prettier --check
 pnpm format                            # prettier --write
-pnpm test                              # Vitest in every package
+pnpm test                              # every package (Vitest; Jest for foundation and starters)
 pnpm --filter foundation test          # one package (scope optional: @buildly/foundation)
-pnpm --filter shared exec vitest run src/config.test.ts   # one test file
+pnpm --filter shared exec vitest run src/config.test.ts   # one Vitest file
+pnpm --filter starters exec jest --selectProjects journal # one starter's smoke tests
+pnpm --filter foundation digest        # regenerate dist/api-digest.md (CI fails if stale)
+pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
+docker build -f apps/worker/Dockerfile -t buildly-worker .   # worker image with pre-baked foundation deps
 ```
+
+On this Mac `/opt/homebrew/bin/docker` is an npm documentation generator, not Docker, and it writes a `doc/` folder into the current directory. Use `/Applications/Docker.app/Contents/Resources/bin/docker`.
 
 - Packages are `@buildly/<dir>`, export `src/index.ts` directly, and pin shared tool versions through the `catalog:` in `pnpm-workspace.yaml`.
 - TypeScript stays on 6.0.x: typescript-eslint does not support 7 yet.
 - Server env is read only through `loadConfig('web' | 'worker')` from `@buildly/shared/config`, never the `@buildly/shared` root, so env names stay out of client bundles.
 - Nested standalone projects (`.plan/mvp/mockup/`, each `spikes/<name>/`) carry their own `pnpm-workspace.yaml` and lockfile. Without it, `pnpm install` inside them resolves up to the repo workspace and installs that instead. Add dependencies there with `pnpm add -w`. `spikes/` is excluded from ESLint and Prettier.
 - `.env.example` and `.plan/mvp/METRICS.md` are test fixtures: the shared tests fail if the env schema or the event list drifts from them.
+
+### Foundation and starters
+
+- `packages/foundation` is two things: the Expo app that ships (`App.tsx`, `app.json`, `tsconfig.json`, `src/`) and a workspace package whose `lib/`, `scripts/`, `test/`, `export/`, and `dist/` never ship. `foundation.json` is the contract (allowlist, layout globs, schema-version rule); its versions must equal the `foundation` catalog in `pnpm-workspace.yaml` and the package's `dependencies` keys (a test enforces both).
+- Shipped app code is standalone: it may import only allowlisted packages and relative paths, never `@buildly/*`. Anything both sides need (such as `RUNTIME_ERROR_PREFIX`) is duplicated and pinned by a cross-check test.
+- A starter is only project-owned files (`src/navigation.tsx`, `src/screens/**`, `src/data/models.ts`, `src/data/seed.ts`). Helpers go in `models.ts`, since other paths are not writable. Screens take no props and use `useNavigation`/`useRoute` hooks.
+- Jest tests (D19) in these two packages: `jest.resetModules()` gives a fresh store but a second React, so re-require `@testing-library/react-native/pure` after it and use the queries `render` returns; `toBeOnTheScreen` only works with the top-level instance. Bottom tabs are found with `getByLabelText(/^Name, tab/)`. `packages/starters/test/resolver.cjs` overlays a starter on the foundation.
+- After changing any exported component props or store signature, run `pnpm --filter foundation digest` and commit `dist/api-digest.md`.
 
 ## Planned commands (not yet available)
 

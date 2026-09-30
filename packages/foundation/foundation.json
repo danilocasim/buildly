@@ -1,16 +1,10 @@
 {
+  "$comment": "The contract every generated app follows (ARCHITECTURE.md §4). Validated by foundationManifestSchema in packages/shared.",
   "sdkVersion": "54.0.0",
   "resolvedWith": {
     "spike": "SPIKES.md S2",
     "snackSdk": "6.6.2",
     "checkedAt": "2026-09-30"
-  },
-  "core": {
-    "expo": "~54.0.32",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-web": "*"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -18,8 +12,61 @@
     "@react-navigation/bottom-tabs": "7.20.0",
     "@react-navigation/native": "7.5.0",
     "@react-navigation/native-stack": "7.20.0",
+    "expo": "~54.0.32",
+    "expo-constants": "~18.0.14",
     "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0"
-  }
+  },
+  "layout": {
+    "foundationFiles": [
+      "App.tsx",
+      "app.json",
+      "tsconfig.json",
+      "src/theme/**",
+      "src/components/**",
+      "src/data/store.ts"
+    ],
+    "templateFiles": [
+      "src/navigation.tsx",
+      "src/screens/**",
+      "src/data/models.ts",
+      "src/data/seed.ts"
+    ],
+    "writable": [
+      "src/navigation.tsx",
+      "src/screens/**/*.tsx",
+      "src/data/models.ts",
+      "src/data/seed.ts"
+    ],
+    "readOnly": [
+      "App.tsx",
+      "app.json",
+      "tsconfig.json",
+      "src/theme/**",
+      "src/components/**",
+      "src/data/store.ts"
+    ],
+    "forbidden": [
+      "package.json",
+      "foundation.json",
+      "babel.config.js",
+      "metro.config.js",
+      "app.config.js",
+      "app.config.ts",
+      "index.js",
+      "index.ts"
+    ],
+    "appJsonWritableKeys": ["expo.name"],
+    "exportReadme": "export/README.md"
+  },
+  "smokeChecks": [
+    {
+      "name": "typecheck",
+      "command": "tsc --noEmit -p tsconfig.json"
+    }
+  ],
+  "schemaVersionRule": "src/data/models.ts exports `schemaVersion`. Bump it by 1 in the same change whenever a model gains, loses, renames, or retypes a field, or a collection is added or removed; update src/data/seed.ts to match. On a version mismatch the app wipes local data, reseeds demo data, and shows a one-time notice. There are no migrations."
 }

@@ -12,7 +12,8 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "pnpm -r test",
-    "check:secrets": "tsx scripts/check-no-secrets.ts"
+    "check:secrets": "tsx scripts/check-no-secrets.ts",
+    "checker:selftest": "pnpm --filter @buildly/checker selftest"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

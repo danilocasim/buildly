@@ -1,0 +1,10 @@
+{
+  "extends": "../../foundation/tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"],
+    // A starter's relative imports of foundation files ("./store", "../components")
+    // resolve as in an assembled app. The checker type-checks each real assembly.
+    "rootDirs": ["../../foundation", "../journal", "../habit-tracker", "../inventory"]
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

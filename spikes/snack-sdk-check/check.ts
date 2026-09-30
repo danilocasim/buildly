@@ -20,6 +20,7 @@ export const ALLOWLIST = [
   "@react-native-async-storage/async-storage",
   "expo-status-bar",
   "@expo/vector-icons",
+  "expo-constants",
 ];
 
 const APP = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");

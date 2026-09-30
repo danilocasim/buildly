@@ -1,6 +1,6 @@
 {
   "sdkVersion": "54.0.0",
-  "checkedAt": "2026-09-30T13:44:20.242Z",
+  "checkedAt": "2026-09-30T15:08:27.157Z",
   "snackSdk": "6.6.2",
   "pass": true,
   "rows": [
@@ -86,6 +86,13 @@
       "requested": "^15.0.3",
       "version": "^15.0.3",
       "wantedVersion": "^15.0.3",
+      "preloaded": true
+    },
+    {
+      "name": "expo-constants",
+      "requested": "~18.0.14",
+      "version": "~18.0.14",
+      "wantedVersion": "~18.0.14",
       "preloaded": true
     }
   ],

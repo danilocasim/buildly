@@ -12,7 +12,7 @@ const BROKEN = {
   runtime: `\nthrow new Error("S1 runtime throw");\n`,
 };
 
-export function SnackSpike(props: { app: string; sdkVersion: string; dependencies: Record<string, string> }) {
+export function SnackSpike(props: { files: Record<string, string>; sdkVersion: string; dependencies: Record<string, string>; label: string }) {
   const webPreviewRef = useRef<Window | null>(null);
   const snackRef = useRef<Snack | null>(null);
   const [state, setState] = useState<SnackState | null>(null);
@@ -25,7 +25,7 @@ export function SnackSpike(props: { app: string; sdkVersion: string; dependencie
     const snack = new Snack({
       sdkVersion: props.sdkVersion as SDKVersion,
       name: "Buildly S1 spike",
-      files: { "App.tsx": { type: "CODE", contents: props.app } },
+      files: Object.fromEntries(Object.entries(props.files).map(([path, contents]) => [path, { type: "CODE" as const, contents }])),
       dependencies: Object.fromEntries(Object.entries(props.dependencies).map(([name, version]) => [name, { version }])),
       webPreviewRef,
       online: true,
@@ -50,7 +50,7 @@ export function SnackSpike(props: { app: string; sdkVersion: string; dependencie
       offLog();
       snack.setOnline(false);
     };
-  }, [props.app, props.sdkVersion, props.dependencies]);
+  }, [props.files, props.sdkVersion, props.dependencies]);
 
   useEffect(() => {
     if (state?.url) QRCode.toDataURL(state.url, { width: 220 }).then(setQr);
@@ -82,9 +82,10 @@ export function SnackSpike(props: { app: string; sdkVersion: string; dependencie
     };
   });
 
+  const app = props.files["App.tsx"] ?? "";
   const inject = (kind: keyof typeof BROKEN | "reset") =>
     snackRef.current?.updateFiles({
-      "App.tsx": { type: "CODE", contents: kind === "reset" ? props.app : props.app + BROKEN[kind] },
+      "App.tsx": { type: "CODE", contents: kind === "reset" ? app : app + BROKEN[kind] },
     });
 
   const addDependency = () => {
@@ -105,7 +106,7 @@ export function SnackSpike(props: { app: string; sdkVersion: string; dependencie
   return (
     <main style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: 24 }}>
       <section>
-        <h1 style={{ fontSize: 20 }}>S1 Snack embed · SDK {props.sdkVersion}{sandbox ? " · sandboxed iframe" : ""}</h1>
+        <h1 style={{ fontSize: 20 }}>S1 Snack embed · {props.label} · SDK {props.sdkVersion}{sandbox ? " · sandboxed iframe" : ""}</h1>
         <iframe
           title="Web preview"
           ref={(c) => {
