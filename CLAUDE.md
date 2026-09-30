@@ -86,6 +86,7 @@ pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
 - Packages are `@buildly/<dir>`, export `src/index.ts` directly, and pin shared tool versions through the `catalog:` in `pnpm-workspace.yaml`.
 - TypeScript stays on 6.0.x: typescript-eslint does not support 7 yet.
 - Server env is read only through `loadConfig('web' | 'worker')` from `@buildly/shared/config`, never the `@buildly/shared` root, so env names stay out of client bundles.
+- Nested standalone projects (`.plan/mvp/mockup/`, each `spikes/<name>/`) carry their own `pnpm-workspace.yaml` and lockfile. Without it, `pnpm install` inside them resolves up to the repo workspace and installs that instead. Add dependencies there with `pnpm add -w`. `spikes/` is excluded from ESLint and Prettier.
 - `.env.example` and `.plan/mvp/METRICS.md` are test fixtures: the shared tests fail if the env schema or the event list drifts from them.
 
 ## Planned commands (not yet available)

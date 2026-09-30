@@ -39,7 +39,12 @@ Steps:
 
 Pass criteria: every dependency resolves on both web and Expo Go. Any that does not is removed from the allowlist or replaced.
 
-Result: _pending_
+Result (2026-09-30): **resolution passes; Expo Go on phones is unverified and at risk.** Code and raw output: `spikes/snack-sdk-check/` (`pnpm install && pnpm check`, results in `results/sdk-*.json`).
+
+- `snack-sdk` 6.6.2 (latest on npm, published 2026-04-01) accepts SDKs 50–54 and rejects anything newer (`Invalid SDKVersion`). Upstream `expo/snack` main supports 55 and 56 (#677, #690), and the hosted web player serves 50–56 (57 returns 404), but no npm release carries them. SDK 57 support is an open issue (#691).
+- For every SDK 50–54, all eight allowlisted dependencies resolve in a Snack session with no missing peers: React Navigation and `react-native-screens` / `expo-status-bar` get Snackager bundles; `react-native-safe-area-context`, `@react-native-async-storage/async-storage`, and `@expo/vector-icons` are preloaded in the Snack runtime.
+- Pinned **SDK 54.0.0** (newest the SDK accepts). Versions in `packages/foundation/foundation.json`: React Navigation `native` 7.5.0, `native-stack` 7.20.0, `bottom-tabs` 7.20.0 (latest stable; 8.x is alpha); `react-native-screens` ~4.16.0, `react-native-safe-area-context` ~5.6.0, `@react-native-async-storage/async-storage` 2.2.0, `expo-status-bar` ~3.0.9, `@expo/vector-icons` ^15.0.3 (Expo's SDK 54 versions); core `expo` ~54.0.32, `react` 19.1.0, `react-native` 0.81.5.
+- **Risk:** Expo's current SDK is 57 and expo.dev/go offers Expo Go only for SDK 57. Store Expo Go runs a single SDK, so it most likely cannot open an SDK 54 Snack. This check does not run code on a device, so the "Expo Go" half of the pass criteria is not met yet. S1 must test an SDK 54 Snack on current store Expo Go (iOS and Android); if it fails, P1 needs a phone-preview decision (wait for Snack SDK 57 on npm, or a development build).
 
 ## S3. OpenAI tool calling and cost smoke (gates Phase 4)
 

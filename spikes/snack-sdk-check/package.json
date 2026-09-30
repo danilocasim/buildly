@@ -1,0 +1,17 @@
+{
+  "name": "spike-snack-sdk-check",
+  "private": true,
+  "type": "module",
+  "description": "SPIKES.md S2: Snack-supported Expo SDKs and allowlist dependency resolution.",
+  "scripts": {
+    "check": "tsx check.ts"
+  },
+  "dependencies": {
+    "snack-sdk": "6.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "22",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  }
+}

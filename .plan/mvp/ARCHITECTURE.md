@@ -96,7 +96,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 ## 6. Snack integration
 
 - One Snack session per project, created lazily on first successful generation, updated on every snapshot change and on restore.
-- `sdkVersion` is pinned in `packages/foundation/foundation.json` and must be one Snack supports (verified in SPIKES.md S1).
+- `sdkVersion` is pinned in `packages/foundation/foundation.json` (54.0.0, D17) and must be one the published `snack-sdk` accepts (SPIKES.md S2); `SNACK_SDK_VERSION` must equal it.
 - The worker reads bundle and runtime errors from the session's state and normalizes them into the same diagnostic shape the checker uses.
 - The web app receives `webPreviewURL` and the online `url` over the project API; the iframe is rendered only with the SDK's web preview reference wiring.
 - Snack sessions never receive secrets. Files sent are exactly the foundation plus project files.
