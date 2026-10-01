@@ -312,18 +312,21 @@ Goal: a web preview Buildly controls, because Snack's hosted web player refuses 
 
 ### Slice 4b.1 Runner container image (fallback)
 
-- [ ] 4b.1.1 Container image with Node 22 and the pre-baked foundation `node_modules` (shared with TODO 2.5.3) that takes a snapshot's files as input and produces a static web build; no network access during the build; CPU, memory, and 120 s time limits.
+- [-] 4b.1.1 Container image with Node 22 and the pre-baked foundation `node_modules` (shared with TODO 2.5.3) that takes a snapshot's files as input and produces a static web build; no network access during the build; CPU, memory, and 120 s time limits.
   Verify: `docker run` with the journal starter snapshot outputs `dist/index.html` within the time limit; a build that tries to reach the network fails.
+  Dropped 2026-10-01: not needed, 4b.0.1 is verified (D18); revisit only if the self-hosted player cannot be kept current, per the beta review in 9.2.3.
 
 ### Slice 4b.2 `expo export --platform web` (fallback)
 
-- [ ] 4b.2.1 Worker `bundling` step for web runs `npx expo export --platform web` inside the runner container on the assembled project and maps Metro errors to the normalized diagnostic shape (TODO 2.5.2).
+- [-] 4b.2.1 Worker `bundling` step for web runs `npx expo export --platform web` inside the runner container on the assembled project and maps Metro errors to the normalized diagnostic shape (TODO 2.5.2).
   Verify: integration test: journal starter → export succeeds; an injected syntax error → one diagnostic with file and line; the build never runs npm scripts from the project.
+  Dropped 2026-10-01: not needed, 4b.0.1 is verified (D18); revisit only if the self-hosted player cannot be kept current, per the beta review in 9.2.3.
 
 ### Slice 4b.3 Isolated-origin static hosting (fallback)
 
-- [ ] 4b.3.1 Upload each export to storage under `previews/{projectId}/{snapshotId}/` and serve it from a dedicated preview origin (separate registrable domain, no cookies, strict CSP) that the workspace iframe loads with `sandbox="allow-scripts"`.
+- [-] 4b.3.1 Upload each export to storage under `previews/{projectId}/{snapshotId}/` and serve it from a dedicated preview origin (separate registrable domain, no cookies, strict CSP) that the workspace iframe loads with `sandbox="allow-scripts"`.
   Verify: e2e: the workspace iframe renders the export; the preview origin cannot read the app's cookies or call its API (checked with a fixture that tries).
+  Dropped 2026-10-01: not needed, 4b.0.1 is verified (D18); revisit only if the self-hosted player cannot be kept current, per the beta review in 9.2.3.
 
 ---
 
