@@ -440,9 +440,9 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 - [x] 6.3.3 Secret guard on every export using 0.3.2.
   Verify: CI test unzips a generated export and runs the guard; a fixture containing a key fails the build.
   Verified 2026-10-01: the guard's rules moved behind `scanFiles` (shared with `scanDirectory`, exported from `@buildly/scripts/check-no-secrets`); the exporter runs it over every entry and throws `ExportBlockedError` naming files and rules but never the match. `index.test.ts`: an unzipped export passes `scanDirectory`; a project file with `sk-abc123` blocks the export. CI's `export-smoke` job also runs `pnpm check:secrets` on the unzipped journal export.
-- [~] 6.3.4 Exported project runs outside Buildly.
+- [x] 6.3.4 Exported project runs outside Buildly.
   Verify: CI job: unzip, `npm ci`, `npx tsc --noEmit` exit 0; **manual** on a clean machine: `npx expo start` and open in Expo Go following only the README.
-  In progress 2026-10-01: CI job `export-smoke` (`.github/workflows/ci.yml`) exports the journal starter (`pnpm --filter @buildly/exporter export-starter journal <zip>`), unzips it, runs the secret guard, then `npm install` and `npx tsc --noEmit` in the unzipped project (`npm install`, not `npm ci`: exports ship no lockfile, and the README says `npm install`). The job passed on PR #12 (run 36847300736, `export-smoke` 46 s: the journal export installed with npm and type-checked on its own, after the secret guard). Pending: the founder's manual check on a clean machine (`npx expo start`, open in Expo Go following only the README); note date and machine here.
+  In progress 2026-10-01: CI job `export-smoke` (`.github/workflows/ci.yml`) exports the journal starter (`pnpm --filter @buildly/exporter export-starter journal <zip>`), unzips it, runs the secret guard, then `npm install` and `npx tsc --noEmit` in the unzipped project (`npm install`, not `npm ci`: exports ship no lockfile, and the README says `npm install`). The job passed on PR #12 (run 36847300736, `export-smoke` 46 s: the journal export installed with npm and type-checked on its own, after the secret guard). Verified 2026-10-02: the founder exported a built project, unzipped it outside the repo, ran `npm install` and `npx expo start` following the README, and opened it in Expo Go; it ran. Machine not recorded.
 
 ### Slice 6.4 Settings
 
@@ -468,9 +468,9 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 7.2 Security and abuse
 
-- [~] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
+- [x] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
   Verify: CI step passes; injecting `process.env.OPENAI_API_KEY` into a client component fails the build.
-  2026-10-01: CI step "Client bundle secret scan" runs `next build` and `pnpm check:secrets apps/web/.next/static`; locally the production client bundle scans clean. Open: the injection check (add a reference to the key's env name in a client component, build, expect the scan to fail, revert) was not run here and needs a manual run.
+  2026-10-01: CI step "Client bundle secret scan" runs `next build` and `pnpm check:secrets apps/web/.next/static`; locally the production client bundle scans clean. Verified 2026-10-02 by the founder: `console.log(process.env.OPENAI_API_KEY)` in `SignInForm`, production build, `pnpm check:secrets apps/web/.next-prod/static` → 1 finding (`env-name:OPENAI_API_KEY` in a client chunk), exit 1; the edit was reverted and the build removed.
 - [x] 7.2.2 Security headers: CSP with the web player origin as the only `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
   Verify: integration test asserts headers on `/` and the workspace route.
   Verified 2026-10-01: `securityHeaders` (`apps/web/src/server/security-headers.ts`, unit-tested) is applied to every route by `next.config.ts`; `e2e/security-headers.spec.ts` asserts the CSP's player-only `frame-src`, `frame-ancestors 'none'`, HSTS, `X-Frame-Options`, and `nosniff` on `/` and `/app/:id` from the running server; the cookie flags stay asserted in `auth.test.ts`; `preview.spec.ts` still sees other frames blocked. Script, style, and connect sources are not restricted yet (ARCHITECTURE.md §8).
@@ -513,12 +513,12 @@ Check each only with the evidence named.
   Verified 2026-10-02: 4.4.2 (failure keeps the snapshot, `error_detail` set), 5.2.2 (e2e: a failed build keeps the preview), 7.3.3 (user-facing title and help line per error code; e2e for a forced type-check failure).
 - [x] 8.7 Restore swaps source and refreshes preview. Evidence: 4.6.2, 5.7.2.
   Verified 2026-10-02: 4.6.2 restore handler tests and 5.7.2 e2e `history.spec.ts` (Restore of the first build refreshes the code tab).
-- [ ] 8.8 Export runs with `npm install && npx expo start` on a clean machine. Evidence: 6.3.4.
-  Open 2026-10-02: 6.3.4 is `[~]`. CI `export-smoke` installs and type-checks the journal export; the founder's clean-machine run (`npm install && npx expo start`, open in Expo Go following only the README) is still needed.
+- [x] 8.8 Export runs with `npm install && npx expo start` on a clean machine. Evidence: 6.3.4.
+  Verified 2026-10-02: 6.3.4 is `[x]`: CI `export-smoke` installs and type-checks the journal export, and the founder ran an export with `npm install && npx expo start` and opened it in Expo Go following only the README.
 - [x] 8.9 Web and phone verification reported separately. Evidence: 5.3.3.
   Verified 2026-10-02: 5.3.3 e2e `preview.spec.ts`: after a build the web and phone statuses differ until the QR modal is opened.
-- [ ] 8.10 No OpenAI credentials in client code, Snack sessions, or exports. Evidence: 7.2.1, 6.3.3, 4.5.1 (files sent assertion).
-  Open 2026-10-02: 6.3.3 (export guard) and 4.5.1 (Snack receives only foundation and project files and pinned dependencies) are `[x]`, and CI scans the production client bundle; 7.2.1 is `[~]` until the injection check (a key reference in a client component must fail the scan) is run by hand.
+- [x] 8.10 No OpenAI credentials in client code, Snack sessions, or exports. Evidence: 7.2.1, 6.3.3, 4.5.1 (files sent assertion).
+  Verified 2026-10-02: 6.3.3 (export guard), 4.5.1 (Snack receives only foundation and project files and pinned dependencies), and 7.2.1 (CI scans the production client bundle; an injected key reference fails the scan) are `[x]`.
 - [x] 8.11 Metrics recorded for every generation. Evidence: 7.1.1.
   Verified 2026-10-02: 7.1.1: `build.started`, `build.step`, `build.finished` (tokens, cost, repairs, wall time) per generation from the worker, plus the web events, typed and tested; `/admin/metrics` and `pnpm report:weekly` compute the §1 metrics from them.
 
