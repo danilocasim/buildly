@@ -197,6 +197,7 @@ export function createGenerationHandler(
                 errorCode: result.errorCode ?? null,
                 errorDetail: result.errorDetail ?? null,
                 resultSnapshotId: result.snapshotId ?? null,
+                screens: result.finish?.screens ?? null,
                 finishedAt: now(),
               })
               .where(eq(schema.generations.id, generationId));

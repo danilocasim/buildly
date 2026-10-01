@@ -86,6 +86,7 @@ export function ChatPanel({
           triggerMessageId: body.messageId!,
           resultSnapshotId: null,
           repairAttempts: 0,
+          screens: null,
           createdAt: now,
           steps: [],
         },

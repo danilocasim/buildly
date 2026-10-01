@@ -387,8 +387,9 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.6 Screen list
 
-- [ ] 5.6.1 Derive screens from the `finish` tool output stored on the generation, falling back to route registrations in files; collapsible panel.
+- [x] 5.6.1 Derive screens from the `finish` tool output stored on the generation, falling back to route registrations in files; collapsible panel.
   Verify: unit test: journal starter yields Entries, Entry detail, New entry, Tags; e2e: panel collapses under 1024 px.
+  Verified 2026-10-01: the worker stores the `finish` tool's validated screen names on `generations.screens` (migration `0003_generation_screens`); `loadWorkspace` serves the latest successful build's list, falling back to `screensFromNavigation` (`packages/shared/src/screens.ts`) over the current snapshot's `src/navigation.tsx`: routes whose component is imported from `./screens/`, humanized, skipping nested navigators and foundation screens. `screens.test.ts`: the journal starter yields Entries, Entry detail, New entry, Tags (registration order Entries, Tags, Entry detail, New entry); the template yields Home. The panel sits beside the preview, expanded from 1024 px and collapsed below (`matchMedia`), with a toggle. `e2e/screens.spec.ts`: after a build the list shows Home at 1280 px; the toggle collapses it; at 768 px it loads collapsed and expands on the toggle. The preview section now shows from 768 px (chat 360 px) so that collapse is visible.
 
 ### Slice 5.7 Toolbar
 

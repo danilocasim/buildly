@@ -145,7 +145,7 @@ export function Workspace({
       <div className="flex min-h-0 flex-1">
         <section
           aria-label="Chat"
-          className="flex w-full min-w-0 flex-col border-r border-line bg-surface lg:w-[420px] lg:shrink-0"
+          className="flex w-full min-w-0 flex-col border-r border-line bg-surface md:w-[360px] md:shrink-0 lg:w-[420px]"
         >
           <ChatPanel
             state={state}
@@ -160,7 +160,7 @@ export function Workspace({
             onResync={resync}
           />
         </section>
-        <section aria-label="Preview" className="hidden min-w-0 flex-1 flex-col lg:flex">
+        <section aria-label="Preview" className="hidden min-w-0 flex-1 flex-col md:flex">
           <div
             role="tablist"
             aria-label="Workspace tabs"
@@ -191,6 +191,7 @@ export function Workspace({
               snapshotId={state.project.currentSnapshotId}
               building={Boolean(active)}
               phoneVerified={phoneOpened}
+              screens={state.screens}
             />
           ) : (
             <div className="min-h-0 flex-1 p-4">

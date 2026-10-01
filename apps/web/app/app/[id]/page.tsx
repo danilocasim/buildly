@@ -19,7 +19,8 @@ export default async function WorkspacePage({
   if (!user) redirect("/sign-in");
   const { id } = await params;
   const { tab } = await searchParams;
-  const state = await loadWorkspace(getDeps().db, user.id, id);
+  const deps = getDeps();
+  const state = await loadWorkspace(deps.db, deps.storage, user.id, id);
   if (!state) notFound();
   return <Workspace initial={state} initialTab={tab === "code" ? "code" : "preview"} />;
 }
