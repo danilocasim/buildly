@@ -39,6 +39,14 @@ describe("POST /api/projects with a prompt", () => {
       generationId: body.generationId,
       projectId: body.id,
     });
+    const created = await h.t.db
+      .select()
+      .from(schema.analyticsEvents)
+      .where(eq(schema.analyticsEvents.projectId, body.id));
+    expect(created.map((e) => [e.name, e.props])).toContainEqual([
+      "project.created",
+      { source: "prompt" },
+    ]);
   });
 
   it("refuses over the build cap before creating anything", async () => {
@@ -88,6 +96,14 @@ describe("POST /api/projects with a starter", () => {
     expect(generations).toEqual([]);
     const jobs = await h.t.db.select().from(schema.jobs).where(eq(schema.jobs.type, "preview"));
     expect(jobs.map((j) => j.payload)).toContainEqual({ projectId: body.id });
+    // 7.1.1: project.created carries the source and the starter slug.
+    const created = await h.t.db
+      .select()
+      .from(schema.analyticsEvents)
+      .where(eq(schema.analyticsEvents.projectId, body.id));
+    expect(created.map((e) => [e.name, e.props])).toEqual([
+      ["project.created", { source: "starter", starter_slug: "journal" }],
+    ]);
   });
 
   it("a starter plus a prompt makes the prompt the first edit on the starter", async () => {

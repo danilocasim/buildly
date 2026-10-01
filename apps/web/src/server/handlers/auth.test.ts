@@ -98,6 +98,15 @@ describe("GET /api/auth/callback", () => {
     const me = await getMe(h.request("GET", "/api/me", { cookie: cookie.split(";")[0] }), h.deps);
     expect(me.status).toBe(200);
     expect(await me.json()).toMatchObject({ email: "new@example.com" });
+
+    // 7.1.1: the sign-in is an analytics event with the method and the user, nothing else.
+    const signIns = await h.t.db
+      .select()
+      .from(schema.analyticsEvents)
+      .where(eq(schema.analyticsEvents.userId, user!.id));
+    expect(signIns.map((e) => ({ name: e.name, props: e.props, projectId: e.projectId }))).toEqual([
+      { name: "user.signed_in", props: { method: "magic_link" }, projectId: null },
+    ]);
   });
 
   it("the same token a second time → redirect to the sign-in error state", async () => {
@@ -174,6 +183,36 @@ describe("GET /api/me", () => {
       expect((await getMe(h.request("GET", "/api/me", { cookie }), h.deps)).status).toBe(401);
     } finally {
       h.clock.now = signedInAt;
+    }
+  });
+});
+
+describe("magic-link rate limit (7.2.3)", () => {
+  it("allows 5 links per email per hour; the 6th → 429; an hour later it is allowed again", async () => {
+    const email = "limited@example.com";
+    await h.t.db.insert(schema.invites).values({ email });
+    const ask = (address = email) =>
+      requestMagicLink(
+        h.request("POST", "/api/auth/magic-link", { body: { email: address } }),
+        h.deps,
+      );
+    const start = h.clock.now;
+    try {
+      for (let i = 0; i < 5; i++) {
+        h.clock.now = new Date(start.getTime() + i * 60_000);
+        expect((await ask()).status).toBe(200);
+      }
+      const sentBefore = h.sent.length;
+      const sixth = await ask(" Limited@Example.com ");
+      expect(sixth.status).toBe(429);
+      expect(await sixth.json()).toMatchObject({ code: "rate_limited" });
+      expect(h.sent.length).toBe(sentBefore);
+      // One hour after the first link, one slot frees up.
+      h.clock.now = new Date(start.getTime() + 60 * 60 * 1000 + 1);
+      expect((await ask()).status).toBe(200);
+      expect((await ask()).status).toBe(429);
+    } finally {
+      h.clock.now = start;
     }
   });
 });

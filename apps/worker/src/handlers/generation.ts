@@ -156,8 +156,8 @@ export function createGenerationHandler(
                 "build.repair",
                 {
                   generation_id: generationId,
-                  attempt: step.detail?.attempt,
-                  source: step.detail?.source,
+                  attempt: Number(step.detail?.attempt),
+                  source: step.detail?.source === "bundle" ? "bundle" : "typecheck",
                 },
                 { userId: generation.userId, projectId },
               );

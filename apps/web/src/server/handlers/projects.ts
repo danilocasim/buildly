@@ -72,18 +72,19 @@ export async function createProject(request: Request, deps: Deps): Promise<Respo
     activeProjects: await projects.countActiveForUser(deps.db, user.id),
   });
   if (!projectCap.ok) {
-    await analytics.track(deps.db, "cap.hit", { cap: projectCap.error.code }, { userId: user.id });
+    await analytics.track(deps.db, "cap.hit", { cap: "projects" }, { userId: user.id });
     return capDenied(projectCap.error);
   }
   // A prompt is a build: its caps are checked before anything is created.
   const buildAllowance = prompt ? await checkBuildFor(deps, user, null) : undefined;
   if (buildAllowance && !buildAllowance.ok) {
-    await analytics.track(
-      deps.db,
-      "cap.hit",
-      { cap: buildAllowance.error.code },
-      { userId: user.id },
-    );
+    if (buildAllowance.error.code !== "generation_active")
+      await analytics.track(
+        deps.db,
+        "cap.hit",
+        { cap: buildAllowance.error.code },
+        { userId: user.id },
+      );
     return capDenied(buildAllowance.error);
   }
 
@@ -132,7 +133,7 @@ export async function createProject(request: Request, deps: Deps): Promise<Respo
       await analytics.track(
         tx,
         "project.created",
-        { source: starter ? "starter" : "prompt" },
+        starter ? { source: "starter", starter_slug: starter.slug } : { source: "prompt" },
         { userId: user.id, projectId: project!.id },
       );
       return { id: project!.id, name: project!.name, generationId };
@@ -238,4 +239,9 @@ export async function listSnapshots(
       };
     }),
   );
+}
+
+/** Records project.opened when the workspace page loads (METRICS.md). */
+export async function trackProjectOpened(deps: Deps, userId: string, projectId: string) {
+  await analytics.track(deps.db, "project.opened", {}, { userId, projectId });
 }

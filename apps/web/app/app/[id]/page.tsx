@@ -3,6 +3,7 @@
 import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/src/server/current-user";
 import { getDeps } from "@/src/server/deps";
+import { trackProjectOpened } from "@/src/server/handlers/projects";
 import { loadWorkspace } from "@/src/server/workspace";
 import { Workspace } from "@/src/ui/workspace/Workspace";
 
@@ -22,5 +23,6 @@ export default async function WorkspacePage({
   const deps = getDeps();
   const state = await loadWorkspace(deps.db, deps.storage, user.id, id);
   if (!state) notFound();
+  await trackProjectOpened(deps, user.id, id);
   return <Workspace initial={state} initialTab={tab === "code" ? "code" : "preview"} />;
 }

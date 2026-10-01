@@ -66,6 +66,10 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # The production client bundle must not contain an OpenAI key or any server env name (TODO 7.2.1).
+      - name: Client bundle secret scan
+        run: pnpm --filter @buildly/web build && pnpm check:secrets apps/web/.next/static
+
       # The committed API digest and foundation-files.json must match the foundation source (TODO 2.3.2).
       - name: Foundation and starters dist are up to date
         run: pnpm --filter foundation digest && pnpm --filter starters dist && git diff --exit-code packages/foundation/dist packages/starters/dist

@@ -139,7 +139,8 @@ Route files are thin: each calls a handler in `apps/web/src/server/handlers/` wi
 ## 8. Security boundaries
 
 - OpenAI key, storage credentials, and DB URL exist only in the worker and server runtime env. A CI test greps the built client bundle and every export ZIP for key prefixes and env names.
-- The web player iframe is sandboxed; the workspace page sets a CSP that allows only the self-hosted player origin for `frame-src`.
+- The web player iframe is sandboxed. Every route sends the headers from `apps/web/src/server/security-headers.ts`: a CSP whose only `frame-src` is the self-hosted player origin, with `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'self'`, and `form-action 'self'`; HSTS (two years, subdomains); `X-Frame-Options: DENY`; `nosniff`; a strict referrer policy. Script, style, and connect sources are not restricted yet. The session cookie is `HttpOnly; Secure; SameSite=Lax`.
+- Abuse limits (`ABUSE_LIMITS` in `packages/shared/src/limits.ts`): 5 magic links per email per rolling hour (counted in `magic_links`), and 120 authenticated API requests per session per minute (an in-memory window in `requireUser`, enough for one web instance). Both answer 429 `rate_limited`; the API one sets `Retry-After`. `users.email` is unique and stored normalized, so one email is one account.
 - Generated code never runs on Buildly servers. The checker runs `tsc` only, with a 60-second timeout and no scripts, against the foundation `node_modules` baked into the worker image (`apps/worker/Dockerfile`, `CHECKER_NODE_MODULES`).
 - Rate limits and caps are enforced in the API before a job is enqueued, and re-checked by the worker on claim.
 

@@ -455,23 +455,30 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 7.1 Instrumentation
 
-- [ ] 7.1.1 Every event in METRICS.md emitted from the listed component with typed props.
+- [x] 7.1.1 Every event in METRICS.md emitted from the listed component with typed props.
   Verify: unit test per emitter; integration test that a full fake build produces `build.started`, ≥ 4 `build.step`, `build.finished`.
-- [ ] 7.1.2 `/admin/metrics` page computing the METRICS.md formulas for 7 and 30 days plus the last nightly eval.
+  Verified 2026-10-01: `EventProps` in `packages/shared/src/events.ts` types every event's props and `analytics.track` is generic over the name, so a wrong prop fails `pnpm typecheck`. New emitters: `user.signed_in` (auth callback), `project.opened` (workspace page), `starter_slug` on `project.created`; the preview tracker validates `load_ms`. Tests: `auth.test.ts` (signed_in), `home.test.ts` (created with source and slug), `projects-toolbar.test.ts` (opened), `builds.test.ts` (cap.hit, build.cancelled), `preview.test.ts`, `phone.test.ts`, `export.test.ts`, `snapshots.test.ts`, and the worker's `generation.test.ts` (started, ≥ 4 steps, finished).
+- [x] 7.1.2 `/admin/metrics` page computing the METRICS.md formulas for 7 and 30 days plus the last nightly eval.
   Verify: integration test seeds events and asserts H1, H2, H3 values; e2e: non-admin → 404.
-- [ ] 7.1.3 Weekly report script writing `.plan/mvp/reports/YYYY-WW.md`.
+  Verified 2026-10-01: `metrics.compute` in `packages/db/src/metrics.ts` (tests seed events and assert every formula), `apps/web/src/server/metrics.ts` loads 7/30 days plus the newest `eval/nightly/*.json` from storage (`metrics.test.ts` asserts H1, H2, H3 for both windows and the nightly summary), `app/admin/metrics/page.tsx` renders them; `e2e/admin-metrics.spec.ts`: anonymous and member → 404, admin → the table. The nightly report reaches storage when `EVAL_STORAGE_BUCKET` is the app's bucket (eval-nightly.yml).
+- [x] 7.1.3 Weekly report script writing `.plan/mvp/reports/YYYY-WW.md`.
   Verify: run once locally against seeded data and commit the sample.
+  Verified 2026-10-01: `pnpm report:weekly [--date YYYY-MM-DD]` (`scripts/weekly-report.ts`, ISO-week and rendering tests in `weekly-report.test.ts`) run against the local docker database with the events from the Phase 5–6 manual builds; sample committed as `.plan/mvp/reports/2026-W40.md`.
 
 ### Slice 7.2 Security and abuse
 
-- [ ] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
+- [~] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
   Verify: CI step passes; injecting `process.env.OPENAI_API_KEY` into a client component fails the build.
-- [ ] 7.2.2 Security headers: CSP with the web player origin as the only `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
+  2026-10-01: CI step "Client bundle secret scan" runs `next build` and `pnpm check:secrets apps/web/.next/static`; locally the production client bundle scans clean. Open: the injection check (add a reference to the key's env name in a client component, build, expect the scan to fail, revert) was not run here and needs a manual run.
+- [x] 7.2.2 Security headers: CSP with the web player origin as the only `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
   Verify: integration test asserts headers on `/` and the workspace route.
-- [ ] 7.2.3 Rate limit on magic-link requests (5 per email per hour) and on API routes by session.
+  Verified 2026-10-01: `securityHeaders` (`apps/web/src/server/security-headers.ts`, unit-tested) is applied to every route by `next.config.ts`; `e2e/security-headers.spec.ts` asserts the CSP's player-only `frame-src`, `frame-ancestors 'none'`, HSTS, `X-Frame-Options`, and `nosniff` on `/` and `/app/:id` from the running server; the cookie flags stay asserted in `auth.test.ts`; `preview.spec.ts` still sees other frames blocked. Script, style, and connect sources are not restricted yet (ARCHITECTURE.md §8).
+- [x] 7.2.3 Rate limit on magic-link requests (5 per email per hour) and on API routes by session.
   Verify: integration test: 6th request → 429.
-- [ ] 7.2.4 One Free account per email and email verification by construction of magic links; duplicate `users.email` rejected.
+  Verified 2026-10-01: `auth.test.ts`: five links in an hour → 200, the 6th (case and spacing variant of the same email) → 429 with no email sent, one slot frees an hour after the first. `rate-limit.test.ts`: request 121 in a minute on one session → 429 with `Retry-After`, another session is unaffected, the next minute is allowed. Limits in `ABUSE_LIMITS`.
+- [x] 7.2.4 One Free account per email and email verification by construction of magic links; duplicate `users.email` rejected.
   Verify: unique index test.
+  Verified 2026-10-01: `queries.test.ts`: a second insert of the same email fails with 23505 on `users_email_unique`; sign-in normalizes the email, so case and spacing variants reach the same account.
 
 ### Slice 7.3 Model selection and tuning
 
@@ -479,8 +486,9 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
   Verify: report files committed under `.eval/`; DECISIONS.md P3 and P5 resolved; the report shows blended cost per build against the $0.04 guardrail.
 - [ ] 7.3.2 Tune system prompt, API digest, and tool error messages until EVAL.md thresholds are met on the chosen config.
   Verify: `pnpm eval --tasks all --runs 1` report shows H1 ≥ 70%, H2 ≥ 80%, T9 100%.
-- [ ] 7.3.3 Failure explanations: map `error_code` to user-facing copy (typecheck, bundle, timeout, cancelled, context too large, dependency not allowed).
+- [x] 7.3.3 Failure explanations: map `error_code` to user-facing copy (typecheck, bundle, timeout, cancelled, context too large, dependency not allowed).
   Verify: unit test covers every code; e2e shows the copy for a forced typecheck failure.
+  Verified 2026-10-01: `FAILURE_COPY` and `failureCopy` in `packages/shared/src/failures.ts` give a title and a help line for every `GENERATION_ERROR_CODES` entry (the generator's `ErrorCode` is now that type) plus the build cap codes; `failures.test.ts` covers every code, the status mapping, and unknown codes. New code `dependency_not_allowed`: a rejection budget spent at least half on `import_not_allowed` ends the run with it (`run.test.ts`). The chat shows the title and help line (`outcome-help`); `chat.spec.ts` asserts both for the forced typecheck failure and that the raw code is gone.
 
 ---
 

@@ -67,7 +67,14 @@ test("steps turn green in order and only on server events; a failed build keeps 
   // A build whose type check fails three times ends failed, explains why, and leaves the
   // previous preview in place.
   await send(page, "Now break the types please");
-  await expect(outcome(page)).toContainText("Type check failed", { timeout: 120_000 });
+  await expect(outcome(page)).toContainText("Build failed: the code has type errors", {
+    timeout: 120_000,
+  });
+  // 7.3.3: the user-facing explanation, not the raw error code.
+  await expect(page.getByTestId("outcome-help").last()).toHaveText(
+    "Buildly tried to repair it and could not. Your last working version is unchanged. Try a smaller change, or describe it differently.",
+  );
+  await expect(outcome(page)).not.toContainText("(typecheck)");
   await expect(outcome(page)).toContainText("src/screens/HomeScreen.tsx");
   await expect(step(page, "typecheck")).toHaveAttribute("data-state", "failed");
   await expect(step(page, "bundle")).toHaveAttribute("data-state", "pending");

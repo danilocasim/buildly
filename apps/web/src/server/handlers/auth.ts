@@ -1,4 +1,5 @@
-import { auth } from "@buildly/db";
+import { analytics, auth } from "@buildly/db";
+import { ABUSE_LIMITS, HOUR_MS } from "@buildly/shared";
 import { z } from "zod";
 import type { Deps } from "../deps";
 import { errorJson, json, readCookie, readJson, SESSION_COOKIE, sessionCookie } from "../http";
@@ -15,7 +16,16 @@ export async function requestMagicLink(request: Request, deps: Deps): Promise<Re
     // Generic on purpose: no hint about who is invited.
     return errorJson(403, "not_invited", "Buildly is invite-only right now.");
   }
-  const token = await auth.createMagicLink(deps.db, email, deps.now());
+  const now = deps.now();
+  const recent = await auth.countMagicLinksSince(deps.db, email, new Date(now.getTime() - HOUR_MS));
+  if (recent >= ABUSE_LIMITS.magicLinksPerEmailPerHour) {
+    return errorJson(
+      429,
+      "rate_limited",
+      "Too many sign-in links for this email. Use the latest one, or try again in an hour.",
+    );
+  }
+  const token = await auth.createMagicLink(deps.db, email, now);
   const link = new URL("/api/auth/callback", deps.appUrl);
   link.searchParams.set("token", token);
   await deps.email.send({
@@ -43,6 +53,7 @@ export async function consumeMagicLink(request: Request, deps: Deps): Promise<Re
   if (!email) return invalidLink(deps);
   const user = await auth.findOrCreateUser(deps.db, email, now);
   const session = await auth.createSession(deps.db, user.id, now);
+  await analytics.track(deps.db, "user.signed_in", { method: "magic_link" }, { userId: user.id });
   return new Response(null, {
     status: 302,
     headers: {

@@ -362,6 +362,24 @@ describe("other failures", () => {
     });
   });
 
+  it("a rejection budget spent mostly on unsupported imports → failed dependency_not_allowed", async () => {
+    const lottie = {
+      name: "write_file",
+      args: {
+        path: "src/screens/HomeScreen.tsx",
+        contents:
+          'import LottieView from "lottie-react-native";\nexport default function HomeScreen() { return null; }\n',
+      },
+    };
+    const h = harness([{ text: PLAN, calls: Array.from({ length: 11 }, () => lottie) }]);
+    const result = await h.run();
+    expect(result).toMatchObject({
+      status: "failed",
+      errorCode: "dependency_not_allowed",
+      rejections: 11,
+    });
+  });
+
   it("a model that never calls finish → failed no_finish after 25 turns", async () => {
     const h = harness([
       { text: PLAN, calls: [writeHome] },

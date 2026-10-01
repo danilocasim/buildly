@@ -58,15 +58,14 @@ export async function getPreview(
   });
 }
 
-const PREVIEW_EVENTS = new Set<string>([
-  EVENTS.previewWebLoaded,
-  EVENTS.previewPhoneOpened,
-  EVENTS.previewResetDemoData,
+const trackSchema = z.discriminatedUnion("name", [
+  z.object({
+    name: z.literal(EVENTS.previewWebLoaded),
+    props: z.object({ load_ms: z.number().int().nonnegative() }).optional(),
+  }),
+  z.object({ name: z.literal(EVENTS.previewPhoneOpened) }),
+  z.object({ name: z.literal(EVENTS.previewResetDemoData) }),
 ]);
-const trackSchema = z.object({
-  name: z.string(),
-  props: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
-});
 
 export async function trackPreview(
   request: Request,
@@ -78,13 +77,12 @@ export async function trackPreview(
   const project = await projects.getForUser(deps.db, user.id, projectId);
   if (!project) return errorJson(404, "not_found", "Project not found.");
   const parsed = trackSchema.safeParse(await readJson(request));
-  if (!parsed.success || !PREVIEW_EVENTS.has(parsed.data.name))
+  if (!parsed.success)
     return errorJson(400, "invalid_event", "Only preview events can be tracked here.");
-  await analytics.track(
-    deps.db,
-    parsed.data.name as typeof EVENTS.previewWebLoaded,
-    { project_id: project.id, ...parsed.data.props },
-    { userId: user.id, projectId: project.id },
-  );
+  const ids = { userId: user.id, projectId: project.id };
+  const event = parsed.data;
+  if (event.name === EVENTS.previewWebLoaded)
+    await analytics.track(deps.db, event.name, { project_id: project.id, ...event.props }, ids);
+  else await analytics.track(deps.db, event.name, { project_id: project.id }, ids);
   return json({ ok: true }, 202);
 }

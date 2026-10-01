@@ -75,4 +75,24 @@ describe("storage configuration", () => {
     const url = new URL(await storage.signedDownloadUrl("k", 60));
     expect(`${url.host}${url.pathname}`).toBe("localhost:9000/dev/k");
   });
+
+  it("lists keys under a prefix in order and reads small text objects", async () => {
+    const s = await createTestStorage();
+    const { storage } = s;
+    try {
+      await storage.putSnapshot("eval/nightly/2026-10-02.json", { b: "2" });
+      await storage.putSnapshot("eval/nightly/2026-10-01.json", { a: "1" });
+      await storage.putSnapshot("exports/x.json", { c: "3" });
+      expect(await storage.listKeys("eval/nightly/")).toEqual([
+        "eval/nightly/2026-10-01.json",
+        "eval/nightly/2026-10-02.json",
+      ]);
+      expect(JSON.parse(await storage.getText("eval/nightly/2026-10-02.json"))).toEqual({
+        files: { b: "2" },
+      });
+      expect(await storage.listKeys("nothing/")).toEqual([]);
+    } finally {
+      await s.cleanup();
+    }
+  });
 });

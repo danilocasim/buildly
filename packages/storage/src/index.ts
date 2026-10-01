@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -35,6 +36,10 @@ export interface Storage {
   /** A GET URL that works without credentials for `ttlSeconds`. */
   signedDownloadUrl(key: string, ttlSeconds: number): Promise<string>;
   delete(key: string): Promise<void>;
+  /** Keys under `prefix`, sorted; e.g. the nightly eval reports (`eval/nightly/`). */
+  listKeys(prefix: string): Promise<string[]>;
+  /** A small UTF-8 object, e.g. an eval report JSON. */
+  getText(key: string): Promise<string>;
   /** Creates the bucket if missing. For local development and tests only. */
   ensureBucket(): Promise<void>;
 }
@@ -89,6 +94,22 @@ export function createStorage(
     },
     async delete(key) {
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    },
+    async listKeys(prefix) {
+      const keys: string[] = [];
+      let token: string | undefined;
+      do {
+        const page = await client.send(
+          new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }),
+        );
+        for (const object of page.Contents ?? []) if (object.Key) keys.push(object.Key);
+        token = page.IsTruncated ? page.NextContinuationToken : undefined;
+      } while (token);
+      return keys.sort();
+    },
+    async getText(key) {
+      const response = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+      return response.Body!.transformToString("utf-8");
     },
     async ensureBucket() {
       try {
