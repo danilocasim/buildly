@@ -13,6 +13,8 @@ export interface Deps {
   email: EmailSender;
   storage: Pick<Storage, "getSnapshot" | "putSnapshot" | "delete">;
   appUrl: string;
+  /** Buildly's self-hosted Snack web player (D18), with %%SDK_VERSION%% for the SDK major. */
+  webPlayerURL?: string;
   now(): Date;
 }
 
@@ -29,6 +31,7 @@ export function getDeps(): Deps {
       email: emailSenderFor(config),
       storage: createStorage(storageConfigFrom(config)),
       appUrl: config.APP_URL,
+      webPlayerURL: config.SNACK_WEB_PLAYER_URL,
       now: () => new Date(),
     };
   }

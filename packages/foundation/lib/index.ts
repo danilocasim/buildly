@@ -1,12 +1,12 @@
 // Node-side access to the foundation for the checker, Snack sessions, and the exporter.
 // Never shipped: generated apps contain App.tsx, app.json, tsconfig.json, and src/.
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { foundationManifestSchema, matchesAnyGlob, type FoundationManifest } from "@buildly/shared";
 
 /** Absolute path of packages/foundation. */
-export const foundationDir = fileURLToPath(new URL("..", import.meta.url));
+export const foundationDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** A project's files: POSIX path relative to the app root → UTF-8 contents. */
 export type FileSet = Record<string, string>;

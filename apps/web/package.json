@@ -16,6 +16,8 @@
     "@buildly/checker": "workspace:^",
     "@buildly/foundation": "workspace:^",
     "@buildly/generator": "workspace:^",
+    "@buildly/snack": "workspace:^",
+    "@buildly/starters": "workspace:^",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "catalog:",
@@ -37,6 +39,7 @@
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "snack-sdk": "6.6.2",
     "zod": "catalog:"
   }
 }

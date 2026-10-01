@@ -1,25 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import {
-  E2E_BASE_URL,
-  E2E_DATABASE_URL,
-  E2E_PORT,
-  E2E_SERVER_LOG,
-  E2E_WORKER_PORT,
-} from "./e2e/env";
-
-const E2E_ENV = {
-  DATABASE_URL: E2E_DATABASE_URL,
-  APP_URL: E2E_BASE_URL,
-  STORAGE_REGION: "us-east-1",
-  STORAGE_BUCKET: "buildly-e2e",
-  STORAGE_ACCESS_KEY: "buildly-dev",
-  STORAGE_SECRET_KEY: "buildly-dev-secret",
-  STORAGE_ENDPOINT: "http://localhost:9000",
-  SNACK_SDK_VERSION: "54.0.0",
-  EMAIL_PROVIDER_API_KEY: "console",
-  EMAIL_FROM: "login@localhost",
-  SESSION_SECRET: "e2e-only-session-secret-at-least-32-chars",
-};
+import { E2E_BASE_URL, E2E_ENV, E2E_PORT, E2E_SERVER_LOG, E2E_WORKER_PORT } from "./e2e/env";
 
 // E2E runs the real Next.js server against the buildly_e2e database on the
 // docker-compose Postgres (`pnpm services:up`).

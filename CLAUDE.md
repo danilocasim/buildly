@@ -81,7 +81,7 @@ pnpm test                              # every package (Vitest; Jest for foundat
 pnpm --filter foundation test          # one package (scope optional: @buildly/foundation)
 pnpm --filter shared exec vitest run src/config.test.ts   # one Vitest file
 pnpm --filter starters exec jest --selectProjects journal # one starter's smoke tests
-pnpm --filter foundation digest        # regenerate dist/api-digest.md (CI fails if stale)
+pnpm --filter foundation digest        # regenerate dist/api-digest.md and dist/foundation-files.json (CI fails if stale)
 pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
 pnpm test:snack                        # live Snack integration test (network; skipped by `pnpm test` and CI)
@@ -109,7 +109,7 @@ On this Mac `/opt/homebrew/bin/docker` is an npm documentation generator, not Do
 - Shipped app code is standalone: it may import only allowlisted packages and relative paths, never `@buildly/*`. Anything both sides need (such as `RUNTIME_ERROR_PREFIX`) is duplicated and pinned by a cross-check test.
 - A starter is only project-owned files (`src/navigation.tsx`, `src/screens/**`, `src/data/models.ts`, `src/data/seed.ts`). Helpers go in `models.ts`, since other paths are not writable. Screens take no props and use `useNavigation`/`useRoute` hooks.
 - Jest tests (D19) in these two packages: `jest.resetModules()` gives a fresh store but a second React, so re-require `@testing-library/react-native/pure` after it and use the queries `render` returns; `toBeOnTheScreen` only works with the top-level instance. Bottom tabs are found with `getByLabelText(/^Name, tab/)`. `packages/starters/test/resolver.cjs` overlays a starter on the foundation.
-- After changing any exported component props or store signature, run `pnpm --filter foundation digest` and commit `dist/api-digest.md`.
+- After changing any exported component props, store signature, or shipped file, run `pnpm --filter foundation digest` and commit `dist/` (the digest and `foundation-files.json`, which the web app imports because Turbopack cannot bundle `lib/`'s directory reads).
 
 ## Local services and database
 
@@ -122,7 +122,8 @@ pnpm db:generate                       # after editing packages/db/src/schema.ts
 pnpm db:seed                           # admin@buildly.test (admin), 3 invites, a project per starter; idempotent
 pnpm db:grant-credits <email> <n> [note]   # top-up build credits (admin grant until Stripe, D21)
 pnpm --filter @buildly/web dev         # http://localhost:3300 (needs a .env with the local values from .env.example)
-pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310
+pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310, fake worker on :3311
+SNACK_LIVE=1 pnpm --filter @buildly/web exec playwright test -g @snack   # live preview checks through CloudFront and Snack (network)
 pnpm --filter @buildly/worker start    # the worker loop
 ```
 

@@ -39,6 +39,7 @@ export async function createHarness(): Promise<Harness> {
       },
     },
     appUrl: APP_URL,
+    webPlayerURL: "https://player.example.test/v2/%%SDK_VERSION%%",
     now: () => clock.now,
   };
   return {

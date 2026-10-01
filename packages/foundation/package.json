@@ -5,7 +5,8 @@
   "type": "module",
   "description": "The Expo foundation every generated app is built on. App.tsx, app.json, tsconfig.json, and src/ ship to Snack and exports; lib/ and test/ stay in the repo.",
   "exports": {
-    ".": "./lib/index.ts"
+    ".": "./lib/index.ts",
+    "./dist/foundation-files.json": "./dist/foundation-files.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p test && tsc --noEmit -p lib && tsc --noEmit -p scripts",

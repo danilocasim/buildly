@@ -126,6 +126,9 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
+      snack-sdk:
+        specifier: 6.6.2
+        version: 6.6.2
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -142,6 +145,12 @@ importers:
       '@buildly/generator':
         specifier: workspace:^
         version: link:../../packages/generator
+      '@buildly/snack':
+        specifier: workspace:^
+        version: link:../../packages/snack
+      '@buildly/starters':
+        specifier: workspace:^
+        version: link:../../packages/starters
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0

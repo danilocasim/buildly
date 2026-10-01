@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceState } from "@/src/server/workspace";
 import { ChatPanel } from "./ChatPanel";
+import { PreviewPanel } from "./PreviewPanel";
 import { applyDelta, applyEvent, fromServer, isActive, type ClientState } from "./state";
 
 export function Workspace({ initial }: { initial: WorkspaceState }) {
@@ -102,21 +103,13 @@ export function Workspace({ initial }: { initial: WorkspaceState }) {
             onResync={resync}
           />
         </section>
-        <section
-          aria-label="Preview"
-          className="hidden min-w-0 flex-1 flex-col items-center justify-center gap-3 p-6 lg:flex"
-        >
-          {/* The web player frame arrives in 5.3; until then the current snapshot is shown. */}
-          <p className="text-[13px] text-muted">Web preview</p>
-          <p
-            data-testid="preview-snapshot"
-            data-snapshot-id={state.project.currentSnapshotId ?? ""}
-            className={`rounded-card border border-line bg-surface px-4 py-3 font-mono text-[12px] ${active ? "opacity-60" : ""}`}
-          >
-            {state.project.currentSnapshotId
-              ? `Snapshot ${state.project.currentSnapshotId.slice(0, 8)}`
-              : "No preview yet"}
-          </p>
+        <section aria-label="Preview" className="hidden min-w-0 flex-1 flex-col lg:flex">
+          <PreviewPanel
+            projectId={projectId}
+            snapshotId={state.project.currentSnapshotId}
+            building={Boolean(active)}
+            phoneVerified={false}
+          />
         </section>
       </div>
     </div>
