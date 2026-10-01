@@ -2,6 +2,7 @@
 // so env names never reach a client bundle (the secret guard scans for them).
 export * from "./diagnostics";
 export * from "./events";
+export * from "./failures";
 export * from "./foundation";
 export * from "./glob";
 export * from "./limits";

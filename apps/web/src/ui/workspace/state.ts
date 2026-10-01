@@ -1,5 +1,6 @@
 // Client-side workspace state: the server-loaded snapshot plus progress events applied as
 // they arrive. Steps turn green only from stored server events (never from model text).
+import { failureCopy } from "@buildly/shared";
 import type { WorkspaceState } from "@/src/server/workspace";
 
 export type Generation = WorkspaceState["generations"][number];
@@ -154,25 +155,7 @@ export function isActive(g: { status: string }): boolean {
   return ACTIVE_STATUSES.has(g.status);
 }
 
-/** User-facing reason for a terminal state (TODO 7.3.3 refines the copy). */
+/** The terminal state's headline (TODO 7.3.3; the copy lives in @buildly/shared failures.ts). */
 export function outcomeText(status: string, errorCode: string | null | undefined): string {
-  if (status === "succeeded") return "Build succeeded";
-  if (status === "cancelled") return "Cancelled";
-  if (status === "timed_out") return "Build timed out";
-  switch (errorCode) {
-    case "typecheck":
-      return "Type check failed";
-    case "bundle":
-      return "Preview bundle failed";
-    case "context_too_large":
-      return "The project is too large for one build";
-    case "too_many_rejections":
-      return "The model kept trying disallowed edits";
-    case "monthly_builds":
-    case "hourly_builds":
-    case "concurrent_builds":
-      return "Build refused by the plan's limits";
-    default:
-      return `Build failed${errorCode ? ` (${errorCode})` : ""}`;
-  }
+  return failureCopy(status, errorCode)?.title ?? "Build succeeded";
 }

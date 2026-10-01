@@ -486,8 +486,9 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
   Verify: report files committed under `.eval/`; DECISIONS.md P3 and P5 resolved; the report shows blended cost per build against the $0.04 guardrail.
 - [ ] 7.3.2 Tune system prompt, API digest, and tool error messages until EVAL.md thresholds are met on the chosen config.
   Verify: `pnpm eval --tasks all --runs 1` report shows H1 ≥ 70%, H2 ≥ 80%, T9 100%.
-- [ ] 7.3.3 Failure explanations: map `error_code` to user-facing copy (typecheck, bundle, timeout, cancelled, context too large, dependency not allowed).
+- [x] 7.3.3 Failure explanations: map `error_code` to user-facing copy (typecheck, bundle, timeout, cancelled, context too large, dependency not allowed).
   Verify: unit test covers every code; e2e shows the copy for a forced typecheck failure.
+  Verified 2026-10-01: `FAILURE_COPY` and `failureCopy` in `packages/shared/src/failures.ts` give a title and a help line for every `GENERATION_ERROR_CODES` entry (the generator's `ErrorCode` is now that type) plus the build cap codes; `failures.test.ts` covers every code, the status mapping, and unknown codes. New code `dependency_not_allowed`: a rejection budget spent at least half on `import_not_allowed` ends the run with it (`run.test.ts`). The chat shows the title and help line (`outcome-help`); `chat.spec.ts` asserts both for the forced typecheck failure and that the raw code is gone.
 
 ---
 

@@ -6,7 +6,12 @@
 //
 // Invariants: steps and progress events are recorded only after the operation they
 // describe completed; the current snapshot changes only in the snapshot step.
-import { formatDiagnostic, type Diagnostic, type FoundationManifest } from "@buildly/shared";
+import {
+  formatDiagnostic,
+  type Diagnostic,
+  type FoundationManifest,
+  type GenerationErrorCode,
+} from "@buildly/shared";
 import {
   buildContext,
   ContextTooLargeError,
@@ -61,15 +66,8 @@ export type GenerationEventType =
   | "snapshot_created"
   | "finished";
 
-export type ErrorCode =
-  | "typecheck"
-  | "bundle"
-  | "timeout"
-  | "cancelled"
-  | "context_too_large"
-  | "too_many_rejections"
-  | "no_finish"
-  | "provider_error";
+/** The codes and their user-facing copy live in @buildly/shared (failures.ts). */
+export type ErrorCode = GenerationErrorCode;
 
 export interface CheckOutcome {
   ok: boolean;
@@ -270,7 +268,14 @@ export async function runGeneration(
         output = tools.execute(call);
       } catch (error) {
         if (error instanceof RejectionBudgetExceeded) {
-          throw new Stop("failed", "too_many_rejections", error.message);
+          // Mostly imports of packages outside the allowlist: the request needs a dependency
+          // Buildly cannot add, which the user should hear as such (TODO 7.3.3).
+          const imports = error.rejections.filter((r) => r.reason === "import_not_allowed");
+          const code =
+            imports.length * 2 >= error.rejections.length
+              ? "dependency_not_allowed"
+              : "too_many_rejections";
+          throw new Stop("failed", code, error.message);
         }
         throw error;
       }

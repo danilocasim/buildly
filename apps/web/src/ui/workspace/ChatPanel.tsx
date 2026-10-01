@@ -2,6 +2,7 @@
 
 import { ArrowUp, Check, Loader2, Sparkles, Square, User, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { failureCopy } from "@buildly/shared";
 import {
   isActive,
   outcomeText,
@@ -233,6 +234,8 @@ function GenerationThread({
   const plan = assistant[0];
   const summary = assistant[1];
   const terminal = !isActive({ status });
+  const errorCode = progress?.errorCode ?? generation.errorCode;
+  const failure = terminal ? failureCopy(status, errorCode) : null;
   return (
     <div className="ml-11 space-y-3" data-testid="generation" data-status={status}>
       {(plan || streaming) && (
@@ -282,14 +285,16 @@ function GenerationThread({
           data-testid="outcome"
           className={`text-[13px] ${status === "succeeded" ? "text-muted" : "text-danger"}`}
         >
-          {outcomeText(status, progress?.errorCode ?? generation.errorCode)}
+          {outcomeText(status, errorCode)}
+          {failure && (
+            <span className="mt-0.5 block text-muted" data-testid="outcome-help">
+              {failure.help}
+            </span>
+          )}
           {status === "failed" && generation.errorDetail && (
             <span className="mt-1 block font-mono text-[12px] whitespace-pre-wrap text-ink">
               {generation.errorDetail}
             </span>
-          )}
-          {status === "cancelled" && (
-            <span className="block text-muted">Your last working version is unchanged.</span>
           )}
         </p>
       )}
