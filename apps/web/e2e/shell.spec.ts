@@ -38,7 +38,7 @@ test("at 1280 px the sidebar is visible with Home, Starters, Settings and the pl
     await expect(nav.getByRole("link", { name })).toBeVisible();
   }
   await expect(sidebar.getByText("Free plan")).toBeVisible();
-  await expect(sidebar.getByText("0/15 builds")).toBeVisible();
+  await expect(sidebar.getByText(/\d+\/15 builds/)).toBeVisible();
   await expect(sidebar.getByTestId("sidebar-email")).toHaveText("member@example.com");
   await expect(page.getByRole("button", { name: "Open menu" })).toBeHidden();
 

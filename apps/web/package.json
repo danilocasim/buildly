@@ -13,6 +13,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
+    "@buildly/checker": "workspace:^",
+    "@buildly/foundation": "workspace:^",
+    "@buildly/generator": "workspace:^",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "catalog:",
@@ -22,6 +25,7 @@
     "drizzle-orm": "^0.45.3",
     "pg": "^8.23.1",
     "tailwindcss": "4.3.3",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

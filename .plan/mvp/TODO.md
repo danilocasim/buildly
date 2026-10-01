@@ -345,14 +345,18 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.2 Chat panel
 
-- [ ] 5.2.1 `GET /api/projects/:id/stream` SSE endpoint relaying 4.4.4 events and assistant message deltas; reconnect with `Last-Event-ID`.
+- [x] 5.2.1 `GET /api/projects/:id/stream` SSE endpoint relaying 4.4.4 events and assistant message deltas; reconnect with `Last-Event-ID`.
   Verify: integration test: client disconnects mid-run and reconnects; no events are lost or duplicated.
-- [ ] 5.2.2 Chat UI: message list, streamed assistant plan, progress steps (`Plan ready`, `Files written`, `Types checked`, `Preview bundled`) that only turn green on server events, subtle "OpenAI" label near the composer.
+  Verified 2026-10-01: `apps/web/src/server/handlers/stream.ts` (`GET /api/projects/:id/stream`): SSE on a dedicated LISTEN connection from the pool (`Deps.pool`), stored events with their row id as the SSE id, deltas as id-less `delta` frames, `retry: 2000`, a comment ping, and resume from `Last-Event-ID` (or `?after=` on the first connection). `stream.test.ts`: a client reading four events disconnects, two more are published, a reconnect from the last id receives exactly those two, no id repeats; deltas arrive; other users get 404, anonymous 401. A reconnect that aborts before the subscription exists still releases the connection.
+- [x] 5.2.2 Chat UI: message list, streamed assistant plan, progress steps (`Plan ready`, `Files written`, `Types checked`, `Preview bundled`) that only turn green on server events, subtle "OpenAI" label near the composer.
   Verify: e2e with a fake provider: steps appear in order and never before the server event; a run that fails at typecheck shows the failure reason and keeps the previous preview.
-- [ ] 5.2.3 Composer disabled during an active run; Cancel button visible; cancel keeps the last snapshot.
+  Verified 2026-10-01: the workspace page (`app/app/[id]`, outside the shell) loads `loadWorkspace` (`GET /api/projects/:id`: project, messages, generations with recorded steps, `lastEventId`) and `src/ui/workspace/` follows the stream: per-generation threads with the streamed plan, the four steps (`state.ts` turns a step green only from a stored event; the running spinner is UI state), outcome text, and the summary; an "OpenAI" label sits by the composer. `e2e/chat.spec.ts` runs against the real pipeline with `e2e/fake-worker.ts` (the real worker loop, generation handler, checker, and events with a scripted model, registered as a second Playwright web server): Plan ready turns green while Types checked and Preview bundled are not, then each in order, outcome "Build succeeded", the summary, and a snapshot; a build whose type check fails three times ends "Type check failed" with the diagnostics (`src/screens/HomeScreen.tsx`), the type-check step red, and the preview's snapshot unchanged. Found on the way: `createPool` had no `error` listener, so a terminated idle connection (here the e2e database being recreated under a running worker; in production a Postgres restart) crashed the process; it now logs and the pool reconnects (`packages/db/src/client.test.ts`).
+- [x] 5.2.3 Composer disabled during an active run; Cancel button visible; cancel keeps the last snapshot.
   Verify: e2e: click Cancel mid-run → status "Cancelled", preview unchanged, composer re-enabled.
-- [ ] 5.2.4 Cap and error handling: 429 shows the reason and `resetAt`; the prompt text is preserved.
+  Verified 2026-10-01: the composer is disabled while a generation is active and shows Cancel, which calls `POST /api/generations/:id/cancel`. `chat.spec.ts`: Cancel during a stalled first turn → outcome "Cancelled", generation status `cancelled`, preview still "No preview yet", composer enabled, Cancel gone.
+- [x] 5.2.4 Cap and error handling: 429 shows the reason and `resetAt`; the prompt text is preserved.
   Verify: e2e: exceed the hourly cap → inline message, textarea still contains the prompt.
+  Verified 2026-10-01: a 4xx from `POST /api/projects/:id/messages` shows its message inline with "Try again after <resetAt>" (a `<time>` element) and keeps the prompt. `chat.spec.ts`: a user with ten builds in the hour sends an eleventh → the hourly message and reset time show, the textarea still holds the prompt.
 
 ### Slice 5.3 Preview panel
 

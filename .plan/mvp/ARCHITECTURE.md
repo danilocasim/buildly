@@ -123,9 +123,9 @@ Route files are thin: each calls a handler in `apps/web/src/server/handlers/` wi
 | `/api/auth/magic-link` | POST | Request link (invite gate) |
 | `/api/auth/callback` | GET | Consume link, create session |
 | `/api/projects` | GET, POST | List, create from prompt or starter |
-| `/api/projects/:id` | GET, PATCH | Load workspace state, rename |
+| `/api/projects/:id` | GET, PATCH | Load workspace state (project, messages, generations with steps, `lastEventId`), rename |
 | `/api/projects/:id/messages` | POST | Send chat message, enqueue generation (returns generation id or 429 with reason) |
-| `/api/projects/:id/stream` | GET (SSE) | Steps, message deltas, preview status |
+| `/api/projects/:id/stream` | GET (SSE) | Stored progress events (SSE id = `project_events.id`, resumable from `Last-Event-ID` or `?after=`) and live assistant deltas |
 | `/api/generations/:id/cancel` | POST | Cancel |
 | `/api/projects/:id/snapshots` | GET | History |
 | `/api/projects/:id/snapshots/:sid/restore` | POST | Restore |

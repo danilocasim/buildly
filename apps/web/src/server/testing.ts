@@ -30,6 +30,7 @@ export async function createHarness(): Promise<Harness> {
   const clock = { now: new Date("2026-10-15T12:00:00Z") };
   const deps: Deps = {
     db: t.db,
+    pool: t.pool,
     storage: s.storage,
     email: {
       send: (message) => {

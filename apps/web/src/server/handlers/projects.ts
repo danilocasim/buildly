@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Deps } from "../deps";
 import { capDenied, errorJson, json, readJson } from "../http";
 import { requireUser } from "../session";
+import { loadWorkspace } from "../workspace";
 
 const createSchema = z.object({ name: z.string().trim().min(1).max(80).optional() });
 
@@ -52,4 +53,17 @@ export async function createProject(request: Request, deps: Deps): Promise<Respo
     { userId: user.id, projectId: project!.id },
   );
   return json({ id: project!.id, name: project!.name }, 201);
+}
+
+/** GET /api/projects/:id — the workspace state (project, messages, generations, lastEventId). */
+export async function getProject(
+  request: Request,
+  deps: Deps,
+  projectId: string,
+): Promise<Response> {
+  const user = await requireUser(request, deps);
+  if (user instanceof Response) return user;
+  const state = await loadWorkspace(deps.db, user.id, projectId);
+  if (!state) return errorJson(404, "not_found", "Project not found.");
+  return json(state);
 }

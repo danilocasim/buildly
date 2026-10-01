@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 export const E2E_PORT = 3310;
+export const E2E_WORKER_PORT = 3311;
 export const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
 export const E2E_ADMIN_URL =
   process.env.TEST_DATABASE_ADMIN_URL ?? "postgres://buildly:buildly@localhost:5433/postgres";
