@@ -154,7 +154,7 @@ export async function getProject(
 ): Promise<Response> {
   const user = await requireUser(request, deps);
   if (user instanceof Response) return user;
-  const state = await loadWorkspace(deps.db, deps.storage, user.id, projectId);
+  const state = await loadWorkspace(deps.db, user.id, projectId);
   if (!state) return errorJson(404, "not_found", "Project not found.");
   return json(state);
 }

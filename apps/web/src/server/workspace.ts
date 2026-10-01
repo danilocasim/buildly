@@ -2,18 +2,11 @@
 // generation with its recorded steps, and the id of the last progress event, from which
 // the page's EventSource resumes. Served by GET /api/projects/:id and used by the page.
 import { asc, eq, inArray, max } from "drizzle-orm";
-import { projects, schema, snapshots, type Db } from "@buildly/db";
-import { screensFromNavigation } from "@buildly/shared";
-import type { Storage } from "@buildly/storage";
+import { projects, schema, type Db } from "@buildly/db";
 
 export type WorkspaceState = NonNullable<Awaited<ReturnType<typeof loadWorkspace>>>;
 
-export async function loadWorkspace(
-  db: Db,
-  storage: Pick<Storage, "getSnapshot">,
-  userId: string,
-  projectId: string,
-) {
+export async function loadWorkspace(db: Db, userId: string, projectId: string) {
   const project = await projects.getForUser(db, userId, projectId);
   if (!project) return undefined;
   const messages = await db
@@ -38,17 +31,6 @@ export async function loadWorkspace(
         )
         .orderBy(asc(schema.generationSteps.startedAt))
     : [];
-  // Screens (TODO 5.6.1): the latest successful build's finish output, else the routes of
-  // the current snapshot's navigation file.
-  const latestSucceeded = [...generations].reverse().find((g) => g.status === "succeeded");
-  let screens: string[] = latestSucceeded?.screens?.length ? latestSucceeded.screens : [];
-  if (screens.length === 0 && project.currentSnapshotId) {
-    const snapshot = await snapshots.get(db, project.currentSnapshotId);
-    if (snapshot) {
-      const files = await storage.getSnapshot(snapshot.storageKey);
-      screens = screensFromNavigation(files["src/navigation.tsx"]);
-    }
-  }
   const [last] = await db
     .select({ id: max(schema.projectEvents.id) })
     .from(schema.projectEvents)
@@ -79,7 +61,6 @@ export async function loadWorkspace(
       triggerMessageId: g.triggerMessageId,
       resultSnapshotId: g.resultSnapshotId,
       repairAttempts: g.repairAttempts,
-      screens: g.screens ?? null,
       createdAt: g.createdAt.toISOString(),
       steps: steps
         .filter((s) => s.generationId === g.id)
@@ -91,7 +72,6 @@ export async function loadWorkspace(
           finishedAt: s.finishedAt.toISOString(),
         })),
     })),
-    screens,
     lastEventId: Number(last?.id ?? 0),
   };
 }

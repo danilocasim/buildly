@@ -270,7 +270,6 @@ export function Workspace({
               snapshotId={state.project.currentSnapshotId}
               building={Boolean(active)}
               phoneVerified={phoneOpened}
-              screens={state.screens}
             />
           ) : (
             <div className="min-h-0 flex-1 p-4">

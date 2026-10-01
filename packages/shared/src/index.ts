@@ -7,5 +7,4 @@ export * from "./foundation";
 export * from "./glob";
 export * from "./limits";
 export * from "./preview";
-export * from "./screens";
 export * from "./result";
