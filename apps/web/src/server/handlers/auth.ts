@@ -1,4 +1,4 @@
-import { auth } from "@buildly/db";
+import { analytics, auth } from "@buildly/db";
 import { z } from "zod";
 import type { Deps } from "../deps";
 import { errorJson, json, readCookie, readJson, SESSION_COOKIE, sessionCookie } from "../http";
@@ -43,6 +43,7 @@ export async function consumeMagicLink(request: Request, deps: Deps): Promise<Re
   if (!email) return invalidLink(deps);
   const user = await auth.findOrCreateUser(deps.db, email, now);
   const session = await auth.createSession(deps.db, user.id, now);
+  await analytics.track(deps.db, "user.signed_in", { method: "magic_link" }, { userId: user.id });
   return new Response(null, {
     status: 302,
     headers: {

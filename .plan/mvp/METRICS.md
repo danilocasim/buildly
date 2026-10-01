@@ -12,7 +12,7 @@ All events go into `analytics_events` (see ARCHITECTURE.md). Names are stable st
 | `build.started` | worker | `generation_id`, `kind: initial \| edit`, `model` |
 | `build.step` | worker | `generation_id`, `step`, `status`, `duration_ms` |
 | `build.repair` | worker | `generation_id`, `attempt`, `source: typecheck \| bundle` |
-| `build.finished` | worker | `generation_id`, `status`, `repair_attempts`, `wall_ms`, `input_tokens`, `cached_tokens`, `output_tokens`, `cost_usd` |
+| `build.finished` | worker | `generation_id`, `kind: initial \| edit`, `status`, `repair_attempts`, `wall_ms`, `input_tokens`, `cached_tokens`, `output_tokens`, `cost_usd` |
 | `build.cancelled` | web | `generation_id` |
 | `preview.web_loaded` | web | `project_id`, `load_ms` |
 | `preview.phone_opened` | web | `project_id` (QR modal opened) |
@@ -23,7 +23,7 @@ All events go into `analytics_events` (see ARCHITECTURE.md). Names are stable st
 
 ## Formulas
 
-Computed over a date range and stored as a weekly report in `.plan/mvp/reports/`.
+Computed over a date range by `packages/db/src/metrics.ts` (`metrics.compute`), shown on `/admin/metrics`, and stored as a weekly report in `.plan/mvp/reports/` by `pnpm report:weekly`.
 
 | Metric | Formula | Target |
 | --- | --- | --- |

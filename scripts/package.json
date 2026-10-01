@@ -8,6 +8,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@buildly/db": "workspace:*",
     "@buildly/shared": "workspace:*"
   },
   "devDependencies": {

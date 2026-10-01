@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createSnapshot, schema } from "@buildly/db";
 import { createHarness, type Harness } from "../testing";
-import { createProject, listSnapshots, renameProject } from "./projects";
+import { createProject, listSnapshots, renameProject, trackProjectOpened } from "./projects";
 
 let h: Harness;
 beforeAll(async () => {
@@ -91,5 +91,24 @@ describe("GET /api/projects/:id/snapshots", () => {
       parentSnapshotId: first.id,
     });
     expect(body[1]).toMatchObject({ current: false, label: "A journal app", fileCount: 1 });
+  });
+});
+
+describe("project.opened (7.1.1)", () => {
+  it("records one event per workspace open with the user and project ids and no props", async () => {
+    const { user, cookie } = await h.signIn("opened@example.com");
+    const id = await newProject(cookie);
+    await trackProjectOpened(h.deps, user.id, id);
+    await trackProjectOpened(h.deps, user.id, id);
+    const rows = await h.t.db
+      .select()
+      .from(schema.analyticsEvents)
+      .where(eq(schema.analyticsEvents.name, "project.opened"));
+    expect(rows.map((r) => ({ userId: r.userId, projectId: r.projectId, props: r.props }))).toEqual(
+      [
+        { userId: user.id, projectId: id, props: {} },
+        { userId: user.id, projectId: id, props: {} },
+      ],
+    );
   });
 });

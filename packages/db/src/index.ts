@@ -10,3 +10,4 @@ export * as auth from "./auth";
 export * from "./caps";
 export * as credits from "./credits";
 export * as events from "./events";
+export * from "./metrics";

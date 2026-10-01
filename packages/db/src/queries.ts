@@ -104,13 +104,14 @@ export const snapshots = {
 };
 
 export type EventName = import("@buildly/shared").EventName;
+export type EventProps = import("@buildly/shared").EventProps;
 
 export const analytics = {
-  /** Writes one analytics_events row (METRICS.md). Props hold ids and numbers, never prompt text. */
-  async track(
+  /** Writes one analytics_events row (METRICS.md). Props are typed per event: ids and numbers, never prompt text. */
+  async track<N extends EventName>(
     db: Executor,
-    name: EventName,
-    props: Record<string, unknown>,
+    name: N,
+    props: EventProps[N],
     ids: { userId?: string | null; projectId?: string | null } = {},
   ) {
     await db

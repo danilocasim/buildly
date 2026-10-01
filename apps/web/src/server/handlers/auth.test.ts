@@ -98,6 +98,15 @@ describe("GET /api/auth/callback", () => {
     const me = await getMe(h.request("GET", "/api/me", { cookie: cookie.split(";")[0] }), h.deps);
     expect(me.status).toBe(200);
     expect(await me.json()).toMatchObject({ email: "new@example.com" });
+
+    // 7.1.1: the sign-in is an analytics event with the method and the user, nothing else.
+    const signIns = await h.t.db
+      .select()
+      .from(schema.analyticsEvents)
+      .where(eq(schema.analyticsEvents.userId, user!.id));
+    expect(signIns.map((e) => ({ name: e.name, props: e.props, projectId: e.projectId }))).toEqual([
+      { name: "user.signed_in", props: { method: "magic_link" }, projectId: null },
+    ]);
   });
 
   it("the same token a second time → redirect to the sign-in error state", async () => {

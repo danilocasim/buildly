@@ -618,6 +618,9 @@ importers:
 
   scripts:
     dependencies:
+      '@buildly/db':
+        specifier: workspace:*
+        version: link:../packages/db
       '@buildly/shared':
         specifier: workspace:*
         version: link:../packages/shared

@@ -455,12 +455,15 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 7.1 Instrumentation
 
-- [ ] 7.1.1 Every event in METRICS.md emitted from the listed component with typed props.
+- [x] 7.1.1 Every event in METRICS.md emitted from the listed component with typed props.
   Verify: unit test per emitter; integration test that a full fake build produces `build.started`, ≥ 4 `build.step`, `build.finished`.
-- [ ] 7.1.2 `/admin/metrics` page computing the METRICS.md formulas for 7 and 30 days plus the last nightly eval.
+  Verified 2026-10-01: `EventProps` in `packages/shared/src/events.ts` types every event's props and `analytics.track` is generic over the name, so a wrong prop fails `pnpm typecheck`. New emitters: `user.signed_in` (auth callback), `project.opened` (workspace page), `starter_slug` on `project.created`; the preview tracker validates `load_ms`. Tests: `auth.test.ts` (signed_in), `home.test.ts` (created with source and slug), `projects-toolbar.test.ts` (opened), `builds.test.ts` (cap.hit, build.cancelled), `preview.test.ts`, `phone.test.ts`, `export.test.ts`, `snapshots.test.ts`, and the worker's `generation.test.ts` (started, ≥ 4 steps, finished).
+- [x] 7.1.2 `/admin/metrics` page computing the METRICS.md formulas for 7 and 30 days plus the last nightly eval.
   Verify: integration test seeds events and asserts H1, H2, H3 values; e2e: non-admin → 404.
-- [ ] 7.1.3 Weekly report script writing `.plan/mvp/reports/YYYY-WW.md`.
+  Verified 2026-10-01: `metrics.compute` in `packages/db/src/metrics.ts` (tests seed events and assert every formula), `apps/web/src/server/metrics.ts` loads 7/30 days plus the newest `eval/nightly/*.json` from storage (`metrics.test.ts` asserts H1, H2, H3 for both windows and the nightly summary), `app/admin/metrics/page.tsx` renders them; `e2e/admin-metrics.spec.ts`: anonymous and member → 404, admin → the table. The nightly report reaches storage when `EVAL_STORAGE_BUCKET` is the app's bucket (eval-nightly.yml).
+- [x] 7.1.3 Weekly report script writing `.plan/mvp/reports/YYYY-WW.md`.
   Verify: run once locally against seeded data and commit the sample.
+  Verified 2026-10-01: `pnpm report:weekly [--date YYYY-MM-DD]` (`scripts/weekly-report.ts`, ISO-week and rendering tests in `weekly-report.test.ts`) run against the local docker database with the events from the Phase 5–6 manual builds; sample committed as `.plan/mvp/reports/2026-W40.md`.
 
 ### Slice 7.2 Security and abuse
 
