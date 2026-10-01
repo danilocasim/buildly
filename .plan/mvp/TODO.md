@@ -406,14 +406,18 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 6.1 Home
 
-- [ ] 6.1.1 Heading "What mobile app will you build?", composer with placeholder "Describe your mobile app...", starter chip at lower left, "Build app" at lower right.
+- [x] 6.1.1 Heading "What mobile app will you build?", composer with placeholder "Describe your mobile app...", starter chip at lower left, "Build app" at lower right.
   Verify: e2e: empty prompt → button disabled; select starter → enabled with empty prompt; chip removable.
-- [ ] 6.1.2 Submit creates a project and enqueues the first build, then routes to the workspace with the stream already open.
+  Verified 2026-10-01: `app/(shell)/page.tsx` greets by first name over the heading; `src/ui/home/Composer.tsx` has the prompt (placeholder "Describe your mobile app...", ⌘↵ builds), the Choose starter menu that becomes a removable chip at lower left (starters from `packages/starters/dist/starters-files.json`, emitted by `pnpm --filter starters dist` and checked in CI like the foundation's), and Build app at lower right. `e2e/home.spec.ts`: empty prompt → disabled; a starter alone → enabled; removing the chip → disabled.
+- [x] 6.1.2 Submit creates a project and enqueues the first build, then routes to the workspace with the stream already open.
   Verify: e2e with fake provider: first step appears within 2 s of landing.
-- [ ] 6.1.3 Recent apps grid (icon, name, updated time, overflow menu with Rename and Archive); empty-state invitation for new users.
+  Verified 2026-10-01: `POST /api/projects` accepts `prompt` and `starterSlug`: the build caps are checked first, then the project, the message, the generation, the usage event (and credit), and the job are written in one transaction through `src/server/builds.ts` `startBuild`, now shared with the message handler; the name comes from the prompt (`nameFromPrompt`). The composer routes to `/app/<id>`, whose stream opens on mount. `home.test.ts` covers the transaction, the name, and a cap refusal creating nothing. `home.spec.ts`: after Build app the workspace shows the plan step within 2 s of landing (the route is warmed once first, since dev compiles on first visit), then the fake worker finishes the build.
+- [x] 6.1.3 Recent apps grid (icon, name, updated time, overflow menu with Rename and Archive); empty-state invitation for new users.
   Verify: e2e: new user sees the invitation; after creating a project the grid shows it.
-- [ ] 6.1.4 Prompt preserved on any error before navigation.
+  Verified 2026-10-01: `src/ui/home/HomeBrowse.tsx`: Recent apps grid (icon by starter, name, relative updated time) with an overflow menu whose Rename edits inline (PATCH name) and whose Archive calls `PATCH /api/projects/:id` with `archived: true` (sets `archived_at`; archived projects leave every list and are no longer reachable); an invitation card when the user has no apps. `home.spec.ts`: a new user sees "No apps yet"; after a build the card shows; Rename persists after reload; Archive removes it and the invitation returns.
+- [x] 6.1.4 Prompt preserved on any error before navigation.
   Verify: e2e: force a 500 on create → error toast, textarea unchanged.
+  Verified 2026-10-01: the composer shows the API's message (and reset time) inline and keeps the prompt on any non-2xx or network failure; navigation happens only on 201. `home.spec.ts` forces a 500 on the create request with a Playwright route and checks the error text and the unchanged textarea.
 
 ### Slice 6.2 Starters
 

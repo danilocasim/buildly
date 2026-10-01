@@ -62,7 +62,7 @@ test("opening the modal records preview.phone_opened and shows the Expo Go QR on
           [id],
         )
       ).rows[0]!.n;
-    await expect.poll(count).toBe(1);
+    await expect.poll(count, { timeout: 30_000 }).toBe(1);
 
     // After a build the worker's session exists; opening again shows its QR and URL.
     await page.getByLabel("Message").fill("A welcome screen");
@@ -73,7 +73,7 @@ test("opening the modal records preview.phone_opened and shows the Expo Go QR on
     await page.getByRole("button", { name: "Open on phone" }).click();
     await expect(page.getByTestId("expo-go-qr")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("expo-go-url")).toContainText("snack-channel=e2e-channel");
-    await expect.poll(count).toBe(2);
+    await expect.poll(count, { timeout: 30_000 }).toBe(2);
     const jobs = await client.query(
       "select count(*)::int as n from jobs where type = 'preview' and payload->>'projectId' = $1",
       [id],

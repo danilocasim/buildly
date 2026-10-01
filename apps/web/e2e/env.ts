@@ -17,6 +17,7 @@ export const E2E_SERVER_LOG = fileURLToPath(new URL(".server.log", import.meta.u
 
 /** The environment both e2e servers (web, fake worker) run with. */
 export const E2E_ENV = {
+  NEXT_DIST_DIR: ".next-e2e",
   DATABASE_URL: E2E_DATABASE_URL,
   APP_URL: E2E_BASE_URL,
   STORAGE_REGION: "us-east-1",

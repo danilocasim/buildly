@@ -27,7 +27,7 @@ describe("PATCH /api/projects/:id", () => {
       renameProject(h.request("PATCH", `/api/projects/${id}`, { cookie: c, body }), h.deps, id);
     const ok = await patch(cookie, { name: "  New name  " });
     expect(ok.status).toBe(200);
-    expect(await ok.json()).toEqual({ id, name: "New name" });
+    expect(await ok.json()).toEqual({ id, name: "New name", archived: false });
     const [row] = await h.t.db.select().from(schema.projects).where(eq(schema.projects.id, id));
     expect(row!.name).toBe("New name");
     expect((await patch(cookie, { name: "" })).status).toBe(400);

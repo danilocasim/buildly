@@ -111,6 +111,9 @@ importers:
       '@buildly/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@buildly/starters':
+        specifier: workspace:*
+        version: link:../../packages/starters
       '@buildly/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -154,9 +157,6 @@ importers:
       '@buildly/snack':
         specifier: workspace:^
         version: link:../../packages/snack
-      '@buildly/starters':
-        specifier: workspace:^
-        version: link:../../packages/starters
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -550,6 +550,9 @@ importers:
       react-test-renderer:
         specifier: catalog:foundation
         version: 19.1.0(react@19.1.0)
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: catalog:foundation
         version: 5.9.3
