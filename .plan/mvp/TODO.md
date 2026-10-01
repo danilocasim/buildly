@@ -421,10 +421,12 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 6.2 Starters
 
-- [ ] 6.2.1 Starter cards on Home from `starters.json` with thumbnail, description, and Use starter; reserved `/starters` route rendering the same list.
+- [x] 6.2.1 Starter cards on Home from `starters.json` with thumbnail, description, and Use starter; reserved `/starters` route rendering the same list.
   Verify: e2e: three cards render with images; `/starters` responds 200.
-- [ ] 6.2.2 Use starter creates the project from the fixture files with an initial snapshot and no build consumed.
+  Verified 2026-10-01: `src/ui/home/StarterCard.tsx` (thumbnail from `apps/web/public/starters/<slug>.png`, copies of the package's PNGs pinned byte-for-byte by `thumbnails.test.ts`; description; screen chips on the large variant; Use starter) renders on Home's Starters tab and on `/starters` (`app/(shell)/starters/page.tsx`), both from `starters-files.json`. `e2e/starters.spec.ts`: three cards whose images have loaded (`naturalWidth > 0`) on Home and on `/starters`, which answers 200.
+- [x] 6.2.2 Use starter creates the project from the fixture files with an initial snapshot and no build consumed.
   Verify: integration test: `usage_events` count unchanged; snapshot files equal the fixture; workspace preview loads without a generation row.
+  Verified 2026-10-01: Use starter posts `starterSlug` to `POST /api/projects`, which creates the project with the fixture files as its initial snapshot and queues a `preview` job, with no generation, message, or usage event. `home.test.ts`: `usage_events` unchanged, the snapshot's files equal `loadStarterFiles("journal")`, no generation row, the preview job queued; a starter plus a prompt makes the prompt an edit on that base. `starters.spec.ts`: the workspace opens named Journal with no generation thread, the player iframe and "Snapshot …" caption, the screen list (Entries), and `/api/me` still at 0 builds.
 
 ### Slice 6.3 Export
 
