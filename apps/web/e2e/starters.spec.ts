@@ -46,7 +46,8 @@ test("Use starter opens a workspace with the starter's preview and no build cons
   await expect(page.getByTestId("generation")).toHaveCount(0);
   await expect(page.getByTestId("preview-snapshot")).toContainText("Snapshot", { timeout: 30_000 });
   await expect(page.getByTestId("web-preview")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId("screens-list")).toContainText("Entries");
+  // The workspace has no screen list (D23).
+  await expect(page.getByTestId("screens-panel")).toHaveCount(0);
   const me = (await (await page.request.get("/api/me")).json()) as {
     usage: { buildsThisMonth: number };
   };

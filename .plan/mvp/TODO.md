@@ -388,9 +388,10 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.6 Screen list
 
-- [x] 5.6.1 Derive screens from the `finish` tool output stored on the generation, falling back to route registrations in files; collapsible panel.
+- [-] 5.6.1 Derive screens from the `finish` tool output stored on the generation, falling back to route registrations in files; collapsible panel.
   Verify: unit test: journal starter yields Entries, Entry detail, New entry, Tags; e2e: panel collapses under 1024 px.
   Verified 2026-10-01: the worker stores the `finish` tool's validated screen names on `generations.screens` (migration `0003_generation_screens`); `loadWorkspace` serves the latest successful build's list, falling back to `screensFromNavigation` (`packages/shared/src/screens.ts`) over the current snapshot's `src/navigation.tsx`: routes whose component is imported from `./screens/`, humanized, skipping nested navigators and foundation screens. `screens.test.ts`: the journal starter yields Entries, Entry detail, New entry, Tags (registration order Entries, Tags, Entry detail, New entry); the template yields Home. The panel sits beside the preview, expanded from 1024 px and collapsed below (`matchMedia`), with a toggle. `e2e/screens.spec.ts`: after a build the list shows Home at 1280 px; the toggle collapses it; at 768 px it loads collapsed and expands on the toggle. The preview section now shows from 768 px (chat 360 px) so that collapse is visible.
+  Dropped 2026-10-02 (D23): the founder removed the panel because its entries looked clickable but did nothing. The panel, `screensFromNavigation`, and `e2e/screens.spec.ts` are gone; `generations.screens` is still stored from `finish`.
 
 ### Slice 5.7 Toolbar
 
@@ -427,7 +428,7 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
   Verified 2026-10-01: `src/ui/home/StarterCard.tsx` (thumbnail from `apps/web/public/starters/<slug>.png`, copies of the package's PNGs pinned byte-for-byte by `thumbnails.test.ts`; description; screen chips on the large variant; Use starter) renders on Home's Starters tab and on `/starters` (`app/(shell)/starters/page.tsx`), both from `starters-files.json`. `e2e/starters.spec.ts`: three cards whose images have loaded (`naturalWidth > 0`) on Home and on `/starters`, which answers 200.
 - [x] 6.2.2 Use starter creates the project from the fixture files with an initial snapshot and no build consumed.
   Verify: integration test: `usage_events` count unchanged; snapshot files equal the fixture; workspace preview loads without a generation row.
-  Verified 2026-10-01: Use starter posts `starterSlug` to `POST /api/projects`, which creates the project with the fixture files as its initial snapshot and queues a `preview` job, with no generation, message, or usage event. `home.test.ts`: `usage_events` unchanged, the snapshot's files equal `loadStarterFiles("journal")`, no generation row, the preview job queued; a starter plus a prompt makes the prompt an edit on that base. `starters.spec.ts`: the workspace opens named Journal with no generation thread, the player iframe and "Snapshot …" caption, the screen list (Entries), and `/api/me` still at 0 builds.
+  Verified 2026-10-01: Use starter posts `starterSlug` to `POST /api/projects`, which creates the project with the fixture files as its initial snapshot and queues a `preview` job, with no generation, message, or usage event. `home.test.ts`: `usage_events` unchanged, the snapshot's files equal `loadStarterFiles("journal")`, no generation row, the preview job queued; a starter plus a prompt makes the prompt an edit on that base. `starters.spec.ts`: the workspace opens named Journal with no generation thread, the player iframe and "Snapshot …" caption, the screen list (Entries; since D23 the spec asserts there is no screen panel), and `/api/me` still at 0 builds.
 
 ### Slice 6.3 Export
 

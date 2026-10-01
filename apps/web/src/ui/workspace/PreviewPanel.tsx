@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  ChevronDown,
-  PanelLeftClose,
-  PanelLeftOpen,
-  RefreshCw,
-  RotateCcw,
-  Smartphone,
-} from "lucide-react";
+import { ChevronDown, RefreshCw, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { RESET_DEMO_DATA_MESSAGE } from "@buildly/shared";
 import { PhoneFrame, VIEWPORTS, type Viewport } from "./PhoneFrame";
@@ -18,31 +11,16 @@ export function PreviewPanel({
   snapshotId,
   building,
   phoneVerified,
-  screens,
 }: {
   projectId: string;
   /** The project's current snapshot (from the workspace state); a change reloads the preview. */
   snapshotId: string | null;
   building: boolean;
   phoneVerified: boolean;
-  /** Screen names of the current app (TODO 5.6.1). */
-  screens: string[];
 }) {
   const [data, setData] = useState<PreviewData>();
   const [viewport, setViewport] = useState<Viewport>("large");
   const player = usePlayer(projectId, data);
-  // The screen list is expanded from 1024 px and collapsed below; the toggle overrides.
-  const [screensOpen, setScreensOpen] = useState<boolean | null>(null);
-  const [wide, setWide] = useState(true);
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 1024px)");
-    const apply = () => setWide(query.matches);
-    apply();
-    query.addEventListener("change", apply);
-    return () => query.removeEventListener("change", apply);
-  }, []);
-  const showScreens = screensOpen ?? wide;
-
   // The preview payload follows the current snapshot.
   useEffect(() => {
     let cancelled = false;
@@ -112,43 +90,6 @@ export function PreviewPanel({
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <aside
-          aria-label="Screens"
-          data-testid="screens-panel"
-          data-open={showScreens}
-          className={`shrink-0 border-r border-line transition-[width] ${showScreens ? "w-[200px] px-3 pt-4" : "w-11 pt-4"}`}
-        >
-          <button
-            type="button"
-            onClick={() => setScreensOpen(!showScreens)}
-            aria-expanded={showScreens}
-            aria-label={showScreens ? "Collapse screens" : "Expand screens"}
-            className="mx-auto flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium text-ink hover:bg-line/50"
-          >
-            {showScreens ? (
-              <PanelLeftClose size={15} aria-hidden="true" />
-            ) : (
-              <PanelLeftOpen size={15} aria-hidden="true" />
-            )}
-            {showScreens && "Screens"}
-          </button>
-          {showScreens && (
-            <ul className="mt-2 space-y-0.5" data-testid="screens-list">
-              {screens.length === 0 && (
-                <li className="px-2.5 py-2 text-[13px] text-muted">No screens yet.</li>
-              )}
-              {screens.map((name) => (
-                <li
-                  key={name}
-                  className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink/80"
-                >
-                  <Smartphone size={15} aria-hidden="true" className="text-muted" />
-                  {name}
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
         <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto p-6">
           <span className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-line/70 px-2.5 py-1 text-[11px] font-medium text-muted">
             Web preview

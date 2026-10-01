@@ -70,7 +70,7 @@ No promotional countdowns, decorative illustrations, or crowded navigation. The 
 | --- | --- | --- |
 | Home | Heading, prompt composer, three starter cards, recent apps | Recent apps replaces a separate "My Apps" page for the MVP |
 | Starters | The three starters with a phone thumbnail, description, and **Use starter** | Optional if Home cards are sufficient; keep the route reserved |
-| Workspace | Chat, preview/code, screen list | The main experience; separate route from Home |
+| Workspace | Chat, preview/code | The main experience; separate route from Home |
 | Settings | Display name, generation usage against cap, sign out | Minimal |
 
 Sidebar stays visible on desktop and collapses to a drawer below tablet width. The workspace must be usable on a 13-inch laptop.
@@ -94,7 +94,6 @@ Toolbar: back, app icon, editable project name, "Expo + TypeScript" badge, **Ope
 | --- | --- |
 | Chat | User requests, streamed progress, assistant responses, change composer with a subtle "OpenAI" label |
 | Preview / Code | Snack web player inside a phone frame, or read-only file tree with highlighted source |
-| Screen list | Generated screens with human-readable names; collapsible |
 
 Preview controls: two viewport presets (a small and a large phone), build status, refresh, and **Reset demo data**. Label the runtime **Web preview**. Presets change dimensions only; they do not emulate a native OS.
 
@@ -229,7 +228,7 @@ Limits: per-user daily generation cap, per-project max active generation of one,
 ### Include
 
 - Home with prompt composer, three starters, recent apps.
-- Workspace with chat, Snack web preview, read-only code view, screen list.
+- Workspace with chat, Snack web preview, read-only code view.
 - Free-form generation and follow-up edits with bounded repair.
 - Phone preview via Snack QR into Expo Go.
 - Snapshots per successful generation with restore.
@@ -330,7 +329,7 @@ Team plans, seats, an enterprise tier, usage-based token billing, and a marketpl
 | --- | --- |
 | 1 | Foundation package, three starters as committed fixtures, Snack embed spike on the staging domain, `tsc` check script |
 | 2 | Auth, projects and snapshots schema, worker with generation loop and tool validation, evaluation harness with the fixed task set |
-| 3 | Workspace UI: chat streaming, preview iframe, QR modal, code view, screen list |
+| 3 | Workspace UI: chat streaming, preview iframe, QR modal, code view |
 | 4 | Home, starters, recent apps, restore, export ZIP, usage caps |
 | 5 | Model evaluation pass, prompt and foundation tuning against the harness, error handling and repair polish |
 | 6 | Invite-only beta with ten users, metrics review against section 1 targets |

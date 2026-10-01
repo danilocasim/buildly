@@ -21,7 +21,7 @@ export default async function WorkspacePage({
   const { id } = await params;
   const { tab } = await searchParams;
   const deps = getDeps();
-  const state = await loadWorkspace(deps.db, deps.storage, user.id, id);
+  const state = await loadWorkspace(deps.db, user.id, id);
   if (!state) notFound();
   await trackProjectOpened(deps, user.id, id);
   return <Workspace initial={state} initialTab={tab === "code" ? "code" : "preview"} />;
