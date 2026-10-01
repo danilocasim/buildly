@@ -5,13 +5,15 @@
 ## Command
 
 ```bash
-pnpm eval --plan-model gpt-6.1-sol --edit-model gpt-6-luna --tasks all --runs 3 --out .eval/<date>-<config>.json
+pnpm eval --plan-model gpt-5.3-codex --edit-model gpt-6-luna --tasks all --runs 3 --out .eval/<date>-<config>.json
 pnpm eval:report .eval/<date>-<config>.json   # prints a markdown table
 ```
 
 `--plan-model` serves T1–T3 and T10; `--edit-model` serves T4–T9. Passing only `--model` uses one model for everything.
 
-Runs are real API calls and cost money. `--tasks smoke` is the CI subset (T1, T4, T7), run nightly. Harness runs use OpenAI's Flex processing where the model supports it, which costs half; interactive builds in the product always use Standard.
+Runs are real API calls and cost money. `--tasks smoke` is the CI subset (T1, T4, T7), run nightly. Harness runs use Standard processing, the same as interactive builds, so reported costs are what production pays (Flex is not implemented).
+
+The CLI saves the JSON report after every run, so an interrupted eval keeps what it finished. `--keep-files <dir>` also writes each run's final files and assistant messages to `<dir>/<task>-<run>/`, for diagnosing a failed check. A laptop that sleeps pauses a run and inflates `wall_seconds`; run long evals plugged in with the lid open (`caffeinate -ims` blocks idle sleep, not lid-close sleep).
 
 `--dry-run` swaps in a scripted provider (no API calls, no Snack): T1 replays the journal starter, T7 restores the broken file, other tasks finish unchanged. It exercises the loop, the checks, and the report for free and is labeled as not a model result. Without model flags the CLI uses `GENERATION_MODEL_PLAN` / `GENERATION_MODEL_EDIT`; `pnpm eval` reads `.env` if present.
 
@@ -70,6 +72,26 @@ Run E1: `--runs 3` on all tasks for each candidate, single-model: `gpt-6.1-sol`,
 3. **If the small model fails rule 2,** use the plan model for edits too, and trigger brief open decision 4 (lower the Pro cap or raise the price) because blended cost will exceed $0.04.
 
 Record the outcome in `DECISIONS.md`.
+
+### E1 result (2026-10-01)
+
+Run at `--runs 1` per candidate rather than 3, by the founder's choice to limit spend; reports: `.eval/2026-10-01-gpt-6.1-sol.json`, `…-gpt-5.3-codex.json`, `…-gpt-6-luna.json`.
+
+| Candidate | Passed | T1–T3, T10 | T4–T8 | T9 | Mean cost, T1–T3 | Mean cost, T4–T8 |
+| --- | ---: | ---: | ---: | :---: | ---: | ---: |
+| `gpt-6.1-sol` | 5 / 10 | 0 / 4 | 4 / 5 | pass | $0.117 | $0.060 |
+| `gpt-5.3-codex` | 5 / 10 | 1 / 4 | 4 / 5 | fail (no finish in 25 turns) | $0.113 | $0.059 |
+| `gpt-6-luna` | 5 / 10 | 1 / 4 | 4 / 5 | fail (check missed its wording) | $0.006 | $0.003 |
+
+Rule 1 picks `gpt-5.3-codex` for plans (cheaper per initial build, and `gpt-6.1-sol` did not beat it; its T10 failure was a provider error). Rule 2 keeps `gpt-6-luna` for edits (4 / 5 on T4–T8, equal to the plan model). Several E1 failures were the checks', not the models', and were fixed before tuning (TODO 7.3.2):
+
+- T6's smoke rewrite expected `quantityAfter` and the test ID `item-stockLevel`, but a full rename also renames `quantityAfter` and may spell the ID `item-stock-level`. Every model failed it; it now accepts both spellings and throws if the starter test drifts.
+- The model check required the exact type name; it now also accepts a qualified one (`JournalEntry` is an Entry model, `StockAdjustment` an Adjustment), per the T1 wording "store has Entry model".
+- The T9 explanation pattern missed "not among the allowed imports" and "isn't possible".
+
+### Tuned result (TODO 7.3.2)
+
+`gpt-5.3-codex` + `gpt-6-luna` with the tuned system prompt (fewer turns, refuse unavailable packages in the plan, name types and screens after the user's nouns, store each logged event as a record, seed ≥ 3 records): 9 / 10 in `.eval/2026-10-01-tuned-gpt-5.3-codex+gpt-6-luna.json`. H1 75% (3 / 4), H2 100%, T9 pass, median initial wall 59 s, blended cost (1 initial : 3 edits) $0.020. The remaining failure is T2's "a Today screen" check: the app had Habits, Habit Detail, Log Check-in, and History but no route named Today, which the prompt does not ask for. It is left strict pending a founder decision on whether a Today screen belongs in the T2 spec.
 
 ## When to rerun
 

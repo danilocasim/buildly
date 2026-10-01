@@ -108,13 +108,18 @@ export const routesInclude =
     return result(label, missing.length === 0, `routes: ${routes.join(", ") || "none"}`);
   };
 
-/** Each model is an exported interface or type in src/data/models.ts. */
+/**
+ * Each model is an exported interface or type in src/data/models.ts, named exactly or with a
+ * qualifier in front: `JournalEntry` is an Entry model, `StockAdjustment` an Adjustment.
+ */
 export const hasModels =
   (...names: string[]): Check =>
   (o) => {
     const models = o.files["src/data/models.ts"] ?? "";
     const exported = [...models.matchAll(/export\s+(?:interface|type)\s+(\w+)/g)].map((m) => m[1]!);
-    const missing = names.filter((n) => !exported.includes(n));
+    const isModel = (type: string, name: string) =>
+      type === name || new RegExp(`^[A-Z][A-Za-z0-9]*${name}$`).test(type);
+    const missing = names.filter((n) => !exported.some((type) => isModel(type, n)));
     return result(
       `models ${names.join(", ")}`,
       missing.length === 0,
@@ -218,7 +223,7 @@ export const dependencyRefused =
   (o) => {
     const said = o.messages.join("\n");
     const explained =
-      /not (?:available|supported|allowed|included|possible)|isn['’]t (?:available|supported|allowed)|unavailable|can(?:not|['’]t) (?:add|install|use)/i.test(
+      /not (?:available|supported|allowed|included|possible|among the allowed|on the allow ?list|in the allow ?list)|isn['’]t (?:available|supported|allowed|possible)|unavailable|can(?:not|['’]t) (?:add|install|use)|couldn['’]t (?:add|install|use)/i.test(
         said,
       ) && new RegExp(pkg.replace(/[-/]/g, "[-/ ]?") + "|map", "i").test(said);
     const used = sourceFiles(o.files).some(([, source]) => source.includes(`"${pkg}"`));

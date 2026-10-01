@@ -190,12 +190,12 @@ A container image with the foundation's `node_modules` pre-installed. Per projec
 
 OpenAI is the provider, called through the official `openai` SDK behind a small provider interface so another provider can be added later. Model names are server config values, never hard-coded:
 
-| Config | Used for | Starting candidate | Alternative to evaluate |
+| Config | Used for | Chosen (E1, D22) | Fallback |
 | --- | --- | --- | --- |
-| `GENERATION_MODEL_PLAN` | Plans and initial builds | `gpt-6.1-sol` | `gpt-5.3-codex` |
-| `GENERATION_MODEL_EDIT` | Follow-up edits and repairs | `gpt-6-luna` | `gpt-6.1-sol` if the small model misses the H2 target |
+| `GENERATION_MODEL_PLAN` | Plans and initial builds | `gpt-5.3-codex` | `gpt-6.1-sol` |
+| `GENERATION_MODEL_EDIT` | Follow-up edits and repairs | `gpt-6-luna` | the plan model, if the small model misses the H2 target |
 
-Candidates come from OpenAI's pricing page as of 2026-09-30; the evaluation harness makes the final choice.
+Candidates came from OpenAI's pricing page as of 2026-09-30; the evaluation harness made the choice (EVAL.md run E1, DECISIONS.md D22).
 
 1. Build the request context: user prompt, conversation history, `foundation.json` rules, the current project files, and the foundation's public API signatures.
 2. Ask for a short plan (screens, data models, navigation). Stream it as the first chat message.
