@@ -1,9 +1,6 @@
 // Worker entry point: `pnpm --filter @buildly/worker start`. SIGTERM/SIGINT stop claiming,
 // finish the current job (up to 30 s), then exit 0.
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { assembleProject, runTypecheck } from "@buildly/checker";
+import { typecheckFiles } from "@buildly/checker";
 import { createDb, createPool } from "@buildly/db";
 import { loadFoundationFiles, readManifest } from "@buildly/foundation";
 import { createOpenAIProvider, modelsFromConfig } from "@buildly/generator";
@@ -41,14 +38,7 @@ const generation = createGenerationHandler({
   }),
   // Fails at startup if a configured model has no rate (cost accounting needs one).
   models: modelsFromConfig(config),
-  async typecheck(files) {
-    const dir = await mkdtemp(join(tmpdir(), "buildly-check-"));
-    try {
-      return await runTypecheck(assembleProject(foundationFiles, files, dir));
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  },
+  typecheck: (files) => typecheckFiles(foundationFiles, files),
   bundle: (projectId, files) =>
     snack.checkBundle({ id: projectId, name: "Preview" }, files, BUNDLE_TIMEOUT_MS),
   preview,

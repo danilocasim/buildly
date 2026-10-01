@@ -85,6 +85,9 @@ pnpm --filter foundation digest        # regenerate dist/api-digest.md (CI fails
 pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
 pnpm test:snack                        # live Snack integration test (network; skipped by `pnpm test` and CI)
+pnpm eval --tasks smoke --runs 1 --dry-run --model gpt-6-luna   # eval harness, scripted provider, free
+pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all|T1,T4 --runs N   # real API calls (.env OPENAI_API_KEY); writes .eval/*.json
+pnpm eval:report <file.json>            # markdown table with the EVAL.md thresholds
 docker build -f apps/worker/Dockerfile -t buildly-worker .   # worker image with pre-baked foundation deps
 ```
 
@@ -126,12 +129,3 @@ pnpm --filter @buildly/worker start    # the worker loop
 - `tx.rollback()` throws an error named `DrizzleError`; detect it with `isRollback(error)` from `@buildly/db`, not by name.
 - In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log.
 - Usage is governed only by plans and top-up build credits (D10, D21); there is no bring-your-own-key. All cap rules live in `packages/shared/src/limits.ts` (`checkBuild` returns who pays: `plan` or `credit`).
-
-## Planned commands (not yet available)
-
-Later phases add these. Verify lines reference them, but they fail until their phase is done:
-
-```bash
-pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all --runs N
-pnpm eval:report <file.json>
-```

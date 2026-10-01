@@ -258,6 +258,22 @@ importers:
         version: 5.0.3(@types/node@22.20.4)(jsdom@20.0.3)(msw@3.0.1(@types/node@22.20.4)(typescript@6.0.3)(vite@8.3.1(@types/node@22.20.4)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.1(@types/node@22.20.4)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/eval:
+    dependencies:
+      '@buildly/checker':
+        specifier: workspace:*
+        version: link:../checker
+      '@buildly/foundation':
+        specifier: workspace:*
+        version: link:../foundation
+      '@buildly/generator':
+        specifier: workspace:*
+        version: link:../generator
+      '@buildly/snack':
+        specifier: workspace:*
+        version: link:../snack
+      '@buildly/starters':
+        specifier: workspace:*
+        version: link:../starters
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

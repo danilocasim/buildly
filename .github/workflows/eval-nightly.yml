@@ -1,0 +1,71 @@
+name: Eval (nightly)
+
+# EVAL.md "When to rerun": the smoke tasks (T1, T4, T7) against the configured models,
+# once a night. Real API calls: needs the OPENAI_API_KEY secret. Models come from the
+# GENERATION_MODEL_PLAN / GENERATION_MODEL_EDIT repository variables.
+
+on:
+  schedule:
+    - cron: "0 18 * * *" # 02:00 Singapore
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-nightly
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GENERATION_MODEL_PLAN: ${{ vars.GENERATION_MODEL_PLAN || 'gpt-6.1-sol' }}
+      GENERATION_MODEL_EDIT: ${{ vars.GENERATION_MODEL_EDIT || 'gpt-6-luna' }}
+      # Optional: where the JSON is posted (HOSTING.md §3). Without these the report is
+      # only kept as a workflow artifact.
+      EVAL_STORAGE_BUCKET: ${{ vars.EVAL_STORAGE_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.EVAL_STORAGE_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.EVAL_STORAGE_SECRET_KEY }}
+      AWS_DEFAULT_REGION: ap-southeast-1
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # The checker type-checks against the foundation's node_modules (TODO 2.5).
+      - uses: actions/cache@v6
+        with:
+          path: packages/foundation/node_modules
+          key: foundation-node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Eval (smoke)
+        run: |
+          test -n "$OPENAI_API_KEY" || { echo "::error::OPENAI_API_KEY secret is not set"; exit 1; }
+          pnpm eval --tasks smoke --runs 1 --out ".eval/nightly-$(date -u +%F)-${GITHUB_RUN_ID}.json" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: eval-nightly-${{ github.run_id }}
+          path: .eval/*.json
+          if-no-files-found: error
+          include-hidden-files: true
+
+      - name: Post the report to storage
+        if: always() && env.EVAL_STORAGE_BUCKET != '' && env.AWS_ACCESS_KEY_ID != ''
+        run: |
+          for f in .eval/nightly-*.json; do
+            aws s3 cp "$f" "s3://${EVAL_STORAGE_BUCKET}/eval/nightly/$(basename "$f")"
+          done

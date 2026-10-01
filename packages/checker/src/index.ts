@@ -3,6 +3,8 @@
 // `node <typescript>/bin/tsc` (ARCHITECTURE.md §8).
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseTscOutput, type Diagnostic } from "@buildly/shared";
@@ -112,4 +114,19 @@ export function runTypecheck(
       done({ ok: false, errorCode: "typecheck", diagnostics, durationMs });
     });
   });
+}
+
+/** Assembles the files in a fresh temp dir, type-checks them, and removes the dir. */
+export async function typecheckFiles(
+  foundationFiles: FileSet,
+  projectFiles: FileSet,
+  options: { timeoutMs?: number; nodeModules?: string } = {},
+): Promise<TypecheckResult> {
+  const dir = await mkdtemp(join(tmpdir(), "buildly-check-"));
+  try {
+    assembleProject(foundationFiles, projectFiles, dir, options);
+    return await runTypecheck(dir, options);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }

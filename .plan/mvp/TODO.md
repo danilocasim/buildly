@@ -284,14 +284,18 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.7 Evaluation harness
 
-- [ ] 4.7.1 `packages/eval` CLI per EVAL.md: task loader, runner using the real generation loop against a temp Postgres and real providers, JSON output.
+- [x] 4.7.1 `packages/eval` CLI per EVAL.md: task loader, runner using the real generation loop against a temp Postgres and real providers, JSON output.
   Verify: `pnpm eval --tasks smoke --runs 1 --dry-run` with a fake provider produces a report with T1, T4, T7 rows.
-- [ ] 4.7.2 Task checks for T1–T10 implemented as functions over the resulting files and run status, reusing starter smoke tests.
+  Verified 2026-10-01: `pnpm eval --tasks smoke --runs 1 --dry-run --plan-model gpt-6.1-sol --edit-model gpt-6-luna` wrote `.eval/2026-10-01-gpt-6.1-sol+gpt-6-luna-dry-run.json` with T1 (passed, plan model), T4 (failed: new tab registered, since the script changes nothing; journal smoke tests passed), and T7 (passed, edit model). It used the real `runGeneration` loop, the real checker, and real starter smoke tests. `src/index.test.ts` covers the same through `runEval`. Store and events are in memory rather than a temp Postgres (EVAL.md, Implementation); Flex processing is not used yet, so costs are at Standard rates.
+- [x] 4.7.2 Task checks for T1–T10 implemented as functions over the resulting files and run status, reusing starter smoke tests.
   Verify: unit test per check with a passing and a failing fixture.
-- [ ] 4.7.3 `pnpm eval:report` markdown table with the EVAL.md thresholds and pass/fail flags.
+  Verified 2026-10-01: `packages/eval/src/checks.test.ts` gives each of T1–T10 a passing fixture (the committed starters, or small edits of them) and a failing one, asserting exactly which checks fail. `runSmokeTests` runs a starter's committed Jest smoke test against given files (`SMOKE_ROOT`, no secrets in the child environment): the journal passes as committed and fails with an empty seed. Eval tests: 21 passed.
+- [x] 4.7.3 `pnpm eval:report` markdown table with the EVAL.md thresholds and pass/fail flags.
   Verify: run on the dry-run JSON; table renders with threshold columns.
-- [ ] 4.7.4 Nightly CI job running `--tasks smoke` against the configured model with the real API key, posting the JSON to storage.
+  Verified 2026-10-01: `pnpm eval:report .eval/2026-10-01-gpt-6.1-sol+gpt-6-luna-dry-run.json` printed the threshold table (Metric, Value, Target, Result, Maps to) with the six EVAL.md metrics. Metrics without runs are `n/a`, not pass or fail. The dry-run banner and a per-task table follow. `src/report.test.ts` checks the computations, including blended cost (1 initial : 3 edits).
+- [~] 4.7.4 Nightly CI job running `--tasks smoke` against the configured model with the real API key, posting the JSON to storage.
   Verify: one nightly run visible in Actions with an uploaded artifact.
+  In progress 2026-10-01: `.github/workflows/eval-nightly.yml` (cron 18:00 UTC plus `workflow_dispatch`) runs `pnpm eval --tasks smoke --runs 1`, uploads `.eval/*.json` as an artifact, writes the table to the job summary, and copies the JSON to S3 when `EVAL_STORAGE_BUCKET` and the `EVAL_STORAGE_*` secrets exist. Still needed: the `OPENAI_API_KEY` repository secret (none is set) and the workflow on `main`, since scheduled and manual runs only start from the default branch. Then one run checks this off.
 
 ---
 
