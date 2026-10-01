@@ -14,5 +14,12 @@
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@buildly/checker": "workspace:*",
+    "@buildly/foundation": "workspace:*",
+    "@buildly/generator": "workspace:*",
+    "@buildly/snack": "workspace:*",
+    "@buildly/starters": "workspace:*"
   }
 }

@@ -51,6 +51,18 @@ export const projects = {
       .where(and(eq(projectsTable.userId, userId), isNull(projectsTable.archivedAt)))
       .orderBy(desc(projectsTable.updatedAt));
   },
+  /**
+   * Locks the project row until the transaction ends. Starting a build and restoring a
+   * snapshot both take it, so a restore cannot slip in while a build is being started.
+   */
+  async lock(db: Executor, projectId: string) {
+    const [row] = await db
+      .select()
+      .from(projectsTable)
+      .where(eq(projectsTable.id, projectId))
+      .for("update");
+    return row;
+  },
   async countActiveForUser(db: Executor, userId: string): Promise<number> {
     const [row] = await db
       .select({ count: sql<number>`count(*)::int` })

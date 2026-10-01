@@ -1,4 +1,13 @@
-import { analytics, credits, generations, projects, queue, schema, usage } from "@buildly/db";
+import {
+  analytics,
+  credits,
+  generations,
+  projects,
+  queue,
+  schema,
+  usage,
+  isRollback,
+} from "@buildly/db";
 import { checkBuild, HOUR_MS, startOfMonthUtc, startOfNextMonthUtc } from "@buildly/shared";
 import { z } from "zod";
 import type { Deps } from "../deps";
@@ -54,6 +63,9 @@ export async function postMessage(
   let refused: Response | undefined;
   const result = await deps.db
     .transaction(async (tx) => {
+      // The base snapshot is read under the project lock, so a concurrent restore either
+      // finishes first (and becomes the base) or waits for this build to be recorded.
+      const locked = (await projects.lock(tx, project.id))!;
       const [message] = await tx
         .insert(schema.messages)
         .values({ projectId: project.id, role: "user", content: parsed.data.content })
@@ -61,9 +73,9 @@ export async function postMessage(
       const started = await generations.startExclusive(tx, {
         projectId: project.id,
         userId: user.id,
-        kind: project.currentSnapshotId ? "edit" : "initial",
+        kind: locked.currentSnapshotId ? "edit" : "initial",
         triggerMessageId: message!.id,
-        baseSnapshotId: project.currentSnapshotId,
+        baseSnapshotId: locked.currentSnapshotId,
       });
       if (!started.ok) {
         refused = errorJson(409, "generation_active", started.error.message, { resetAt: null });
@@ -99,7 +111,7 @@ export async function postMessage(
     })
     .catch((error: unknown) => {
       // tx.rollback() throws to abort the transaction; `refused` says why.
-      if ((error as Error).name === "TransactionRollbackError" && refused) return undefined;
+      if (isRollback(error) && refused) return undefined;
       throw error;
     });
 

@@ -1,9 +1,9 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadFoundationFiles, loadTemplateFiles } from "@buildly/foundation";
-import { assembleProject, runTypecheck } from "./index";
+import { assembleProject, runTypecheck, typecheckFiles } from "./index";
 
 const dirs: string[] = [];
 function tmp() {
@@ -37,6 +37,25 @@ describe("checker", () => {
       line: expectedLine,
       code: "TS2322",
     });
+  });
+
+  it("typecheckFiles checks in a temp dir and removes it afterwards", async () => {
+    const own = tmp();
+    const saved = process.env.TMPDIR;
+    process.env.TMPDIR = own; // os.tmpdir() reads it on each call
+    try {
+      const project = loadTemplateFiles();
+      expect(await typecheckFiles(foundation, project)).toMatchObject({ ok: true });
+      project["src/screens/HomeScreen.tsx"] += '\nconst x: number = "a";\n';
+      expect(await typecheckFiles(foundation, project)).toMatchObject({
+        ok: false,
+        errorCode: "typecheck",
+      });
+    } finally {
+      if (saved === undefined) delete process.env.TMPDIR;
+      else process.env.TMPDIR = saved;
+    }
+    expect(readdirSync(own)).toEqual([]);
   });
 
   it("returns errorCode timeout when tsc exceeds the limit", async () => {

@@ -10,3 +10,6 @@ coverage
 !.env.example
 .DS_Store
 !packages/foundation/dist/
+
+# Eval harness output and smoke-test scratch dirs
+.eval/

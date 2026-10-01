@@ -13,6 +13,12 @@ pnpm eval:report .eval/<date>-<config>.json   # prints a markdown table
 
 Runs are real API calls and cost money. `--tasks smoke` is the CI subset (T1, T4, T7), run nightly. Harness runs use OpenAI's Flex processing where the model supports it, which costs half; interactive builds in the product always use Standard.
 
+`--dry-run` swaps in a scripted provider (no API calls, no Snack): T1 replays the journal starter, T7 restores the broken file, other tasks finish unchanged. It exercises the loop, the checks, and the report for free and is labeled as not a model result. Without model flags the CLI uses `GENERATION_MODEL_PLAN` / `GENERATION_MODEL_EDIT`; `pnpm eval` reads `.env` if present.
+
+Implementation (`packages/eval`): each run goes through the real `runGeneration` loop with the real checker (`typecheckFiles`) and, outside dry runs, the real OpenAI provider and Snack bundle check (`checkBundle`). Store and progress events are in memory rather than a temp Postgres; the database adds nothing to what is scored. `wall_seconds` is the loop's duration, since there is no queue in between. Checks are functions in `src/checks.ts`. Some are static heuristics over the files: routes come from `src/navigation.tsx`, models from exported types in `src/data/models.ts`, and seed counts from `.create(` calls. Smoke tests run the starter's committed Jest test against the run's files (`SMOKE_ROOT` in `packages/starters/jest.config.cjs`), in a child process with no secrets in its environment, because it executes model-written code. T6 renames `quantity` in the test source the same way.
+
+Not yet implemented: Flex processing. Costs are computed at Standard rates, so harness costs are an upper bound until the provider passes `service_tier`.
+
 ## Task set
 
 | ID | Type | Base | Prompt | Must hold after the run |
@@ -68,4 +74,4 @@ Record the outcome in `DECISIONS.md`.
 ## When to rerun
 
 - Any change to `packages/foundation`, the system prompt, the context builder, or the tool layer: run `--tasks all --runs 1` before merge.
-- Nightly: `--tasks smoke --runs 1` on the current model config, with the result posted to the metrics dashboard.
+- Nightly: `--tasks smoke --runs 1` on the current model config, with the result posted to the metrics dashboard. Workflow: `.github/workflows/eval-nightly.yml` (02:00 Singapore, and manual dispatch). It needs the `OPENAI_API_KEY` secret; the `GENERATION_MODEL_*` repository variables are optional. It uploads the JSON as an artifact, writes the table to the job summary, and copies the JSON to `s3://$EVAL_STORAGE_BUCKET/eval/nightly/` when the `EVAL_STORAGE_BUCKET` variable and `EVAL_STORAGE_ACCESS_KEY` / `EVAL_STORAGE_SECRET_KEY` secrets are set.

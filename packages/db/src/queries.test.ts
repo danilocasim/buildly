@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startOfMonthUtc } from "@buildly/shared";
+import { isRollback } from "./client";
 import { generations, projects, snapshots, usage } from "./queries";
 import { projects as projectsTable, users } from "./schema";
 import { createTestDatabase, type TestDatabase } from "./testing";
@@ -113,5 +114,43 @@ describe("usage", () => {
     });
     expect(await usage.countBuildsThisMonth(t.db, u.id, now)).toBe(3);
     expect(startOfMonthUtc(now).toISOString()).toBe("2026-10-01T00:00:00.000Z");
+  });
+});
+
+describe("transactions", () => {
+  it("isRollback recognizes tx.rollback() and nothing else", async () => {
+    const rolledBack = await t.db
+      .transaction((tx) => {
+        tx.rollback();
+        return Promise.resolve();
+      })
+      .catch((error: unknown) => error);
+    expect(isRollback(rolledBack)).toBe(true);
+    expect(isRollback(new Error("Rollback"))).toBe(false);
+  });
+
+  it("projects.lock holds the row until the transaction ends", async () => {
+    const owner = await user("locker@example.com");
+    const p = await project(owner.id);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let locked!: () => void;
+    const isLocked = new Promise<void>((resolve) => (locked = resolve));
+    const holder = t.db.transaction(async (tx) => {
+      expect((await projects.lock(tx, p.id))?.id).toBe(p.id);
+      locked();
+      await held;
+    });
+    await isLocked;
+    const order: string[] = [];
+    const waiter = t.db.transaction(async (tx) => {
+      await projects.lock(tx, p.id);
+      order.push("waiter");
+    });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    order.push("released");
+    release();
+    await Promise.all([holder, waiter]);
+    expect(order).toEqual(["released", "waiter"]);
   });
 });

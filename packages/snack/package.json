@@ -11,8 +11,14 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@buildly/foundation": "workspace:*",
+    "@buildly/starters": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@buildly/shared": "workspace:*",
+    "snack-sdk": "6.6.2"
   }
 }

@@ -2,6 +2,7 @@
 // write the matching down migration in migrations/down/.
 import { sql } from "drizzle-orm";
 import {
+  bigserial,
   boolean,
   index,
   integer,
@@ -259,6 +260,26 @@ export const jobs = pgTable(
       .on(t.heartbeatAt)
       .where(sql`${t.status} = 'running'`),
   ],
+);
+
+/**
+ * Progress events per project (TODO 4.4.4), written only after the step they report has
+ * completed. Stored so the SSE route can replay from Last-Event-ID; each insert also
+ * NOTIFYs the `project_events` channel for live delivery.
+ */
+export const projectEvents = pgTable(
+  "project_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    generationId: uuid("generation_id").references(() => generations.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    payload: jsonb("payload").notNull().default({}).$type<Record<string, unknown>>(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("project_events_project_idx").on(t.projectId, t.id)],
 );
 
 export const creditReasonEnum = pgEnum("credit_reason", ["topup", "grant", "build", "refund"]);

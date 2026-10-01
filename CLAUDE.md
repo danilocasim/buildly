@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Buildly is an AI mobile app builder: a user describes an app or picks a starter, the AI generates a React Native + Expo + TypeScript project, the user previews it in the browser and in Expo Go, refines it in chat, and exports the source.
 
-**The repo is in implementation.** Phases 0–3 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), and the web app's auth, project, build, and cancel APIs plus `/admin/invites` (`apps/web`, Next.js 16). `packages/generator`, `snack`, `exporter`, and `eval` are placeholders until Phase 4 and later; the web UI is Phase 5–6.
+**The repo is in implementation.** Phases 0–4 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), the web app's auth, project, build, cancel, and restore APIs plus `/admin/invites` (`apps/web`, Next.js 16), and the generation engine: OpenAI provider, tool layer, context builder, and `runGeneration` (`packages/generator`), Snack sessions (`packages/snack`), and the eval harness (`packages/eval`). `packages/exporter` is a placeholder until Phase 6; the web UI is Phase 5–6.
 
 | Path | Role |
 | --- | --- |
@@ -84,6 +84,10 @@ pnpm --filter starters exec jest --selectProjects journal # one starter's smoke 
 pnpm --filter foundation digest        # regenerate dist/api-digest.md (CI fails if stale)
 pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
+pnpm test:snack                        # live Snack integration test (network; skipped by `pnpm test` and CI)
+pnpm eval --tasks smoke --runs 1 --dry-run --model gpt-6-luna   # eval harness, scripted provider, free
+pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all|T1,T4 --runs N   # real API calls (.env OPENAI_API_KEY); writes .eval/*.json
+pnpm eval:report <file.json>            # markdown table with the EVAL.md thresholds
 docker build -f apps/worker/Dockerfile -t buildly-worker .   # worker image with pre-baked foundation deps
 ```
 
@@ -121,16 +125,7 @@ pnpm --filter @buildly/worker start    # the worker loop
 
 - The db scripts and tests never read `.env`: they default to the docker services, so a `DATABASE_URL` pointing at another Postgres cannot be migrated by accident.
 - Each db integration test file gets its own database (`createTestDatabase` from `@buildly/db/testing`) and each storage test its own bucket (`@buildly/storage/testing`).
-- Handlers in `apps/web/src/server/handlers/` take `Deps`; test them with `createHarness()` (fresh database, recorded emails, settable clock, `signIn()` for a session cookie).
+- Handlers in `apps/web/src/server/handlers/` take `Deps`; test them with `createHarness()` (fresh database and bucket, recorded emails, settable clock, `signIn()` for a session cookie; `afterAll(() => h.cleanup())`).
+- `tx.rollback()` throws an error named `DrizzleError`; detect it with `isRollback(error)` from `@buildly/db`, not by name.
 - In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log.
 - Usage is governed only by plans and top-up build credits (D10, D21); there is no bring-your-own-key. All cap rules live in `packages/shared/src/limits.ts` (`checkBuild` returns who pays: `plan` or `credit`).
-
-## Planned commands (not yet available)
-
-Later phases add these. Verify lines reference them, but they fail until their phase is done:
-
-```bash
-pnpm test --tag snack                  # live Snack integration tests (skipped in CI)
-pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all --runs N
-pnpm eval:report <file.json>
-```

@@ -58,7 +58,7 @@
       "index.js",
       "index.ts"
     ],
-    "appJsonWritableKeys": ["expo.name"],
+    "appJsonWritableKeys": [],
     "exportReadme": "export/README.md"
   },
   "smokeChecks": [

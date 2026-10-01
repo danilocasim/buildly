@@ -20,7 +20,10 @@
     "db:migrate": "pnpm --filter @buildly/db migrate",
     "db:migrate:down": "pnpm --filter @buildly/db migrate:down",
     "db:seed": "pnpm --filter @buildly/db seed",
-    "db:grant-credits": "pnpm --filter @buildly/db grant-credits"
+    "db:grant-credits": "pnpm --filter @buildly/db grant-credits",
+    "test:snack": "SNACK_LIVE=1 pnpm --filter @buildly/snack exec vitest run src/snack.live.test.ts",
+    "eval": "tsx --env-file-if-exists=.env packages/eval/src/cli.ts",
+    "eval:report": "tsx packages/eval/src/report-cli.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

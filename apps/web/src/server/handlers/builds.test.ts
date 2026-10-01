@@ -10,7 +10,7 @@ let h: Harness;
 beforeAll(async () => {
   h = await createHarness();
 });
-afterAll(async () => h?.t.cleanup());
+afterAll(async () => h?.cleanup());
 
 async function newProject(cookie: string, name = "App") {
   const response = await createProject(

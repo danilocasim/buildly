@@ -17,8 +17,14 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@buildly/checker": "workspace:*",
     "@buildly/db": "workspace:*",
+    "@buildly/foundation": "workspace:*",
+    "@buildly/generator": "workspace:*",
     "@buildly/shared": "workspace:*",
+    "@buildly/snack": "workspace:*",
+    "@buildly/storage": "workspace:*",
+    "drizzle-orm": "^0.45.3",
     "tsx": "catalog:"
   }
 }
