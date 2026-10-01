@@ -266,10 +266,12 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.5 Snack session manager
 
-- [ ] 4.5.1 `packages/snack`: `ensureSession(project)`, `pushFiles(session, files)`, `awaitBundle(session, timeoutMs)` returning normalized diagnostics, `getUrls(session)` → `{ webPreviewURL, expoGoUrl }`.
+- [x] 4.5.1 `packages/snack`: `ensureSession(project)`, `pushFiles(session, files)`, `awaitBundle(session, timeoutMs)` returning normalized diagnostics, `getUrls(session)` → `{ webPreviewURL, expoGoUrl }`.
   Verify: unit tests with a mocked `snack-sdk`: pushFiles sends foundation + project files and pinned dependencies only; a bundle error resolves to a diagnostic with file and message; timeout → `bundle_timeout`.
-- [ ] 4.5.2 Live integration test (tagged `@snack`, skipped in CI by default) that creates a session with the journal starter and asserts a bundle success.
-  Verify: `pnpm test --tag snack` passes locally; result and date noted here.
+  Verified 2026-10-01: `packages/snack/src/index.ts` `createSnackManager` (plus `checkBundle(project, files, timeoutMs)`, a throwaway offline session the generation's bundle step uses so a failing build never touches the live preview). `src/index.test.ts`, 7 passed with a fake `snack-sdk`: pushFiles sends exactly foundation + project files + `app.json` (unique slug) and the pinned dependencies minus react/react-native/expo; stale files are removed; a client error becomes a diagnostic with file, line and message; dependency failures and runtime-error log lines become diagnostics; timeout → `bundle_timeout`. The worker registers the `generation` handler in `apps/worker/src/main.ts` with the OpenAI provider, the checker, and `checkBundle`. Snack transforms code on the client, so with no client connected the worker check covers upload and dependency resolution; tsc covers syntax and types (ARCHITECTURE.md §6).
+- [x] 4.5.2 Live integration test (tagged `@snack`, skipped in CI by default) that creates a session with the journal starter and asserts a bundle success.
+  Verify: `pnpm test:snack` passes locally; result and date noted here.
+  Verified 2026-10-01: `pnpm test:snack` (`SNACK_LIVE=1`, `src/snack.live.test.ts`, skipped by `pnpm test` and CI) passed: a live session with the journal starter reached a bundle success with URLs, and `checkBundle` on the habit-tracker starter returned ok. `pnpm test --tag snack` is not a Vitest option, so the root script replaces it.
 
 ### Slice 4.6 Snapshots and restore
 

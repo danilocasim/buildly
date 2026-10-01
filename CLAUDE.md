@@ -84,6 +84,7 @@ pnpm --filter starters exec jest --selectProjects journal # one starter's smoke 
 pnpm --filter foundation digest        # regenerate dist/api-digest.md (CI fails if stale)
 pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
+pnpm test:snack                        # live Snack integration test (network; skipped by `pnpm test` and CI)
 docker build -f apps/worker/Dockerfile -t buildly-worker .   # worker image with pre-baked foundation deps
 ```
 
@@ -130,7 +131,6 @@ pnpm --filter @buildly/worker start    # the worker loop
 Later phases add these. Verify lines reference them, but they fail until their phase is done:
 
 ```bash
-pnpm test --tag snack                  # live Snack integration tests (skipped in CI)
 pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all --runs N
 pnpm eval:report <file.json>
 ```

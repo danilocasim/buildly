@@ -28,8 +28,8 @@ describe("worker process", () => {
         APP_URL: "http://localhost:3300",
         SNACK_SDK_VERSION: "54.0.0",
         OPENAI_API_KEY: "test-not-a-key",
-        GENERATION_MODEL_PLAN: "plan-model",
-        GENERATION_MODEL_EDIT: "edit-model",
+        GENERATION_MODEL_PLAN: "gpt-6.1-sol",
+        GENERATION_MODEL_EDIT: "gpt-6-luna",
       },
     });
     const lines: { msg: string; job_id?: string }[] = [];
