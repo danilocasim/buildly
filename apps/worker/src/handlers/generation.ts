@@ -21,6 +21,7 @@ import {
 } from "@buildly/generator";
 import type { Storage } from "@buildly/storage";
 import type { JobContext, JobHandler } from "../runner";
+import { pushPreview, type PreviewPusher } from "./preview";
 
 export interface GenerationHandlerDeps {
   db: Db;
@@ -30,6 +31,8 @@ export interface GenerationHandlerDeps {
   typecheck(files: FileSet, signal: AbortSignal): Promise<CheckOutcome>;
   /** Snack bundle for the project (packages/snack, TODO 4.5). */
   bundle(projectId: string, files: FileSet, signal: AbortSignal): Promise<CheckOutcome>;
+  /** Pushes the new snapshot to the project's live Snack session (TODO 4.6.1). */
+  preview: PreviewPusher;
   now?: () => Date;
 }
 
@@ -230,6 +233,16 @@ export function createGenerationHandler(
         },
         ports,
       );
+      // The build already succeeded; a preview push failure only leaves the old preview.
+      if (result.status === "succeeded" && result.snapshotId && result.files) {
+        await pushPreview(db, deps.preview, {
+          projectId,
+          snapshotId: result.snapshotId,
+          files: result.files,
+        }).catch((error: unknown) =>
+          ctx.log.warn("preview push failed", { error: (error as Error).message }),
+        );
+      }
       ctx.log.info("generation finished", {
         status: result.status,
         error_code: result.errorCode,

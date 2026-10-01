@@ -275,10 +275,12 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.6 Snapshots and restore
 
-- [ ] 4.6.1 On `succeeded`: create snapshot with `parent = base`, set `projects.current_snapshot_id`, push to Snack.
+- [x] 4.6.1 On `succeeded`: create snapshot with `parent = base`, set `projects.current_snapshot_id`, push to Snack.
   Verify: integration test: two sequential fake builds produce a parent chain of length 2.
-- [ ] 4.6.2 `POST /api/projects/:id/snapshots/:sid/restore`: creates a new snapshot whose files equal the target, sets it current, pushes to Snack; blocked while a build is active.
+  Verified 2026-10-01: `apps/worker/src/handlers/generation.test.ts` "chains snapshots across builds…": two fake builds (initial, then edit on the current snapshot) give current → parent → null, a chain of 2, each row's `created_by_generation_id` being its build. Both snapshots were pushed to the live preview (`apps/worker/src/handlers/preview.ts` `pushPreview`; the second push reused the stored channel in `projects.snack_session_id`), with a `preview_updated` event for each. A failed build keeps the current snapshot and pushes nothing. The `preview` job pushes the current snapshot (used by restore). Worker tests: 13 passed.
+- [x] 4.6.2 `POST /api/projects/:id/snapshots/:sid/restore`: creates a new snapshot whose files equal the target, sets it current, pushes to Snack; blocked while a build is active.
   Verify: integration test: restore → new row, files byte-equal to target, 409 if a generation is active.
+  Verified 2026-10-01: `apps/web/src/server/handlers/snapshots.test.ts`, 4 passed. Restore returns 201 with a new row (parent = the previously current snapshot); its files are byte-equal to the target's; it becomes current; a `preview` job is queued; `snapshot.restored` is tracked; the next build's base is the restored snapshot. An active generation → 409 `generation_active` with no new row and current unchanged. Another user's project, or a snapshot from another project → 404; no session → 401. Restore and build start serialize on `projects.lock` (`packages/db/src/queries.test.ts`). This also fixed `postMessage`'s refusal paths, which matched the rollback error by a name drizzle does not use; `isRollback` from `@buildly/db` replaces the check.
 
 ### Slice 4.7 Evaluation harness
 

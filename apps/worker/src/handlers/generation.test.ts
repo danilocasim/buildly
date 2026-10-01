@@ -5,6 +5,7 @@ import { createTestDatabase, type TestDatabase } from "@buildly/db/testing";
 import {
   costFor,
   type CheckOutcome,
+  type FileSet,
   type Provider,
   type ProviderEvent,
   type ProviderRequest,
@@ -14,6 +15,7 @@ import { createTestStorage } from "@buildly/storage/testing";
 import { createLogger } from "../log";
 import type { JobContext } from "../runner";
 import { createGenerationHandler } from "./generation";
+import { createPreviewHandler, type PreviewPusher } from "./preview";
 
 let t: TestDatabase;
 let s: Awaited<ReturnType<typeof createTestStorage>>;
@@ -115,6 +117,45 @@ function jobContext(payload: {
 
 const ok: CheckOutcome = { ok: true, diagnostics: [] };
 
+/** Records pushes to the live preview; the first push opens channel "chan-1". */
+function fakePreview() {
+  const pushes: { projectId: string; channel: string | null; files: FileSet }[] = [];
+  const push: PreviewPusher = (project, files) => {
+    pushes.push({ projectId: project.id, channel: project.channel, files });
+    return Promise.resolve({ channel: project.channel ?? "chan-1" });
+  };
+  return { pushes, push };
+}
+
+/** A follow-up edit build on the project's current snapshot, as postMessage starts it. */
+async function nextBuild(project: { id: string; userId: string }, content: string) {
+  const [current] = await t.db
+    .select()
+    .from(schema.projects)
+    .where(eq(schema.projects.id, project.id));
+  const [message] = await t.db
+    .insert(schema.messages)
+    .values({ projectId: project.id, role: "user", content })
+    .returning();
+  const [generation] = await t.db
+    .insert(schema.generations)
+    .values({
+      projectId: project.id,
+      userId: project.userId,
+      kind: "edit",
+      triggerMessageId: message!.id,
+      baseSnapshotId: current!.currentSnapshotId,
+    })
+    .returning();
+  await usage.record(t.db, {
+    userId: project.userId,
+    projectId: project.id,
+    type: "build",
+    occurredAt: new Date(Date.UTC(2026, 9, 10, 9)),
+  });
+  return generation!;
+}
+
 describe("generation job", () => {
   it("publishes plan ready, files written, types checked, preview bundled in order, each only after its step (4.4.4)", async () => {
     const { project, generation } = await newBuild("events@example.com");
@@ -137,6 +178,7 @@ describe("generation job", () => {
         await bundleGate.promise;
         return ok;
       },
+      preview: fakePreview().push,
     });
 
     const running = handler.run(jobContext({ generationId: generation.id, projectId: project.id }));
@@ -159,6 +201,7 @@ describe("generation job", () => {
       "preview_bundled",
       "snapshot_created",
       "finished",
+      "preview_updated",
     ]);
 
     // Each progress event was written after its step finished.
@@ -188,6 +231,7 @@ describe("generation job", () => {
       models,
       typecheck: async () => ok,
       bundle: async () => ok,
+      preview: fakePreview().push,
     });
     await handler.run(jobContext({ generationId: generation.id, projectId: project.id }));
 
@@ -262,6 +306,7 @@ describe("generation job", () => {
       models,
       typecheck: async () => ok,
       bundle: async () => ok,
+      preview: fakePreview().push,
       now: () => new Date("2026-10-15T12:00:00Z"),
     });
     await handler.run(jobContext({ generationId: generation.id, projectId: project.id }));
@@ -272,5 +317,107 @@ describe("generation job", () => {
     expect(row).toMatchObject({ status: "failed", errorCode: "monthly_builds" });
     expect(provider.calls).toHaveLength(0);
     expect((await events.since(t.db, project.id)).map((e) => e.type)).toEqual(["finished"]);
+  });
+
+  it("chains snapshots across builds and pushes each one to the live preview (4.6.1)", async () => {
+    const { project, generation } = await newBuild("chain@example.com");
+    const preview = fakePreview();
+    const handler = createGenerationHandler({
+      db: t.db,
+      storage: s.storage,
+      provider: scriptedProvider(),
+      models,
+      typecheck: async () => ok,
+      bundle: async () => ok,
+      preview: preview.push,
+      now: () => new Date("2026-10-15T12:00:00Z"),
+    });
+    await handler.run(jobContext({ generationId: generation.id, projectId: project.id }));
+    const second = await nextBuild(project, "Say hello instead");
+    expect(second.baseSnapshotId).not.toBeNull();
+    // A fresh scripted provider: its first turn plans and writes again.
+    await createGenerationHandler({
+      db: t.db,
+      storage: s.storage,
+      provider: scriptedProvider(),
+      models,
+      typecheck: async () => ok,
+      bundle: async () => ok,
+      preview: preview.push,
+      now: () => new Date("2026-10-15T12:00:00Z"),
+    }).run(jobContext({ generationId: second.id, projectId: project.id }));
+
+    const [after] = await t.db
+      .select()
+      .from(schema.projects)
+      .where(eq(schema.projects.id, project.id));
+    // Walk the parent chain from the current snapshot.
+    const chain: (typeof schema.snapshots.$inferSelect)[] = [];
+    for (let id = after!.currentSnapshotId; id;) {
+      const [row] = await t.db.select().from(schema.snapshots).where(eq(schema.snapshots.id, id));
+      chain.push(row!);
+      id = row!.parentSnapshotId;
+    }
+    expect(chain).toHaveLength(2);
+    expect(chain[0]!.createdByGenerationId).toBe(second.id);
+    expect(chain[1]!.id).toBe(second.baseSnapshotId);
+    expect(chain[1]!.createdByGenerationId).toBe(generation.id);
+
+    // Both snapshots reached the live preview; the second push reused the stored channel.
+    expect(preview.pushes.map((p) => p.channel)).toEqual([null, "chan-1"]);
+    expect(preview.pushes[1]!.files).toEqual(await s.storage.getSnapshot(chain[0]!.storageKey));
+    expect(after!.snackSessionId).toBe("chan-1");
+    const types = (await events.since(t.db, project.id)).map((e) => e.type);
+    expect(types.filter((type) => type === "preview_updated")).toHaveLength(2);
+  });
+
+  it("a failed build keeps the current snapshot and does not touch the preview", async () => {
+    const { project, generation } = await newBuild("failed-build@example.com");
+    const preview = fakePreview();
+    await createGenerationHandler({
+      db: t.db,
+      storage: s.storage,
+      provider: scriptedProvider(),
+      models,
+      typecheck: async () => ({
+        ok: false,
+        diagnostics: [{ source: "typecheck", message: "Type error." }],
+      }),
+      bundle: async () => ok,
+      preview: preview.push,
+      now: () => new Date("2026-10-15T12:00:00Z"),
+    }).run(jobContext({ generationId: generation.id, projectId: project.id }));
+    const [after] = await t.db
+      .select()
+      .from(schema.projects)
+      .where(eq(schema.projects.id, project.id));
+    expect(after!.currentSnapshotId).toBeNull();
+    expect(preview.pushes).toHaveLength(0);
+  });
+});
+
+describe("preview job", () => {
+  it("pushes the project's current snapshot to its stored channel", async () => {
+    const { project, generation } = await newBuild("preview-job@example.com");
+    const first = fakePreview();
+    await createGenerationHandler({
+      db: t.db,
+      storage: s.storage,
+      provider: scriptedProvider(),
+      models,
+      typecheck: async () => ok,
+      bundle: async () => ok,
+      preview: first.push,
+      now: () => new Date("2026-10-15T12:00:00Z"),
+    }).run(jobContext({ generationId: generation.id, projectId: project.id }));
+
+    const preview = fakePreview();
+    await createPreviewHandler({ db: t.db, storage: s.storage, preview: preview.push }).run({
+      ...jobContext({ generationId: "", projectId: project.id }),
+      payload: { projectId: project.id },
+    });
+    expect(preview.pushes).toHaveLength(1);
+    expect(preview.pushes[0]).toMatchObject({ projectId: project.id, channel: "chan-1" });
+    expect(preview.pushes[0]!.files["src/screens/HomeScreen.tsx"]).toBe(HOME);
   });
 });

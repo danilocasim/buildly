@@ -25,6 +25,7 @@
   "dependencies": {
     "@buildly/db": "workspace:*",
     "@buildly/shared": "workspace:*",
+    "@buildly/storage": "workspace:*",
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",

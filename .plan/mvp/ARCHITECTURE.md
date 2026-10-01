@@ -71,6 +71,7 @@ Rules the code must enforce:
 
 - `generation_steps` rows are written by the worker after the operation succeeds or fails, never from model text.
 - `projects.current_snapshot_id` changes only in the `snapshot` step or on restore.
+- Restore never edits history: it writes a new snapshot with the target's files (parent: the snapshot that was current), sets it current, and enqueues a `preview` job. It is refused (409) while a build is active. Starting a build and restoring both lock the project row (`projects.lock`), and a build reads its base snapshot under that lock.
 - Exactly one generation per project may be in a non-terminal state (partial unique index).
 - Working files live in memory and in a temp dir on the worker for the duration of the run, seeded from the base snapshot.
 
@@ -102,7 +103,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 
 ## 6. Snack integration
 
-- One Snack session per project, created lazily on first successful generation, updated on every snapshot change and on restore.
+- One Snack session per project, held by the worker process, created lazily on first successful generation, updated on every snapshot change and on restore. After a successful build the generation job pushes the new snapshot itself; a restore enqueues a `preview` job (payload `{ projectId }`) that pushes whatever snapshot is current. Each push stores the channel in `projects.snack_session_id` and publishes a `preview_updated` project event. A failed push leaves the build `succeeded`; only the preview is stale.
 - `sdkVersion` is pinned in `packages/foundation/foundation.json` (54.0.0, D17) and must be one the published `snack-sdk` accepts (SPIKES.md S2); `SNACK_SDK_VERSION` must equal it.
 - The worker reads bundle errors from the session's state and normalizes them into the same diagnostic shape the checker uses (`packages/shared/src/diagnostics.ts`). Snack does not report runtime errors (SPIKES.md S1), so the foundation logs each one as a `[buildly:runtime-error] {json}` console line, which the log listener parses with `fromRuntimeLog`.
 - Snack transforms app code on the viewing client (Expo Go or the web player), not on Snack's servers. The generation's bundle step (`checkBundle`) therefore uploads the files to a throwaway offline session and checks what is knowable server-side: the upload completes and every dependency resolves (missing peers included). Compile and runtime errors are reported only by connected clients, which the live session collects after the snapshot is pushed. Syntax and type errors are caught earlier by the checker's `tsc`. A failing bundle step never changes what the live preview shows.
@@ -114,7 +115,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 
 ## 7. API surface (apps/web)
 
-Route files are thin: each calls a handler in `apps/web/src/server/handlers/` with injected `Deps` (db, email sender, app URL, clock), which is what the integration tests call. `@buildly/db` exposes the runtime API; migrations (`@buildly/db/migrate`), the dev seed (`/seed`), and test helpers (`/testing`) are separate entry points so they stay out of the web bundle.
+Route files are thin: each calls a handler in `apps/web/src/server/handlers/` with injected `Deps` (db, storage, email sender, app URL, clock), which is what the integration tests call. `@buildly/db` exposes the runtime API; migrations (`@buildly/db/migrate`), the dev seed (`/seed`), and test helpers (`/testing`) are separate entry points so they stay out of the web bundle.
 
 | Route | Method | Purpose |
 | --- | --- | --- |

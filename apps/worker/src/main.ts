@@ -11,6 +11,7 @@ import { createSnackManager } from "@buildly/snack";
 import { createStorage, storageConfigFrom } from "@buildly/storage";
 import { loadWorkerConfig } from "./config";
 import { createGenerationHandler } from "./handlers/generation";
+import { createPreviewHandler, type PreviewPusher } from "./handlers/preview";
 import { sleepHandler } from "./handlers/sleep";
 import { createLogger } from "./log";
 import { startWorker } from "./worker";
@@ -24,9 +25,16 @@ const db = createDb(pool);
 const foundationFiles = loadFoundationFiles();
 const snack = createSnackManager({ manifest: readManifest(), foundationFiles });
 
+const storage = createStorage(storageConfigFrom(config));
+const preview: PreviewPusher = (project, files) => {
+  const session = snack.ensureSession(project);
+  snack.pushFiles(session, project, files);
+  return Promise.resolve({ channel: session.channel });
+};
+
 const generation = createGenerationHandler({
   db,
-  storage: createStorage(storageConfigFrom(config)),
+  storage,
   provider: createOpenAIProvider({
     apiKey: config.OPENAI_API_KEY,
     baseURL: config.OPENAI_BASE_URL,
@@ -43,12 +51,17 @@ const generation = createGenerationHandler({
   },
   bundle: (projectId, files) =>
     snack.checkBundle({ id: projectId, name: "Preview" }, files, BUNDLE_TIMEOUT_MS),
+  preview,
 });
 
 const worker = startWorker({
   db,
   log,
-  handlers: { generation, sleep: sleepHandler },
+  handlers: {
+    generation,
+    preview: createPreviewHandler({ db, storage, preview }),
+    sleep: sleepHandler,
+  },
   pollMs: Number(process.env.WORKER_POLL_MS ?? 1000),
 });
 

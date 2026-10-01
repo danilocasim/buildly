@@ -9,7 +9,7 @@ let h: Harness;
 beforeAll(async () => {
   h = await createHarness();
 });
-afterAll(async () => h?.t.cleanup());
+afterAll(async () => h?.cleanup());
 
 const tokenFrom = (text: string) =>
   new URL(/https?:\/\/\S+/.exec(text)![0]).searchParams.get("token")!;
