@@ -381,8 +381,9 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.5 Code tab
 
-- [ ] 5.5.1 Read-only file tree from the current snapshot and a syntax-highlighted viewer (Shiki or Prism), foundation files shown collapsed under a "Foundation (read-only)" group.
+- [x] 5.5.1 Read-only file tree from the current snapshot and a syntax-highlighted viewer (Shiki or Prism), foundation files shown collapsed under a "Foundation (read-only)" group.
   Verify: e2e: tree lists every project file in the snapshot; clicking a file shows its contents; no editable inputs exist.
+  Verified 2026-10-01: `GET /api/projects/:id/files` returns the current snapshot's project files and the foundation files (from `foundation-files.json`); `src/ui/workspace/CodeView.tsx` lists the project files, the foundation files collapsed under "Foundation (read-only)", and a line-numbered viewer highlighted by `prism-react-renderer` (tsx, ts, json). Preview and Code are tabs on the workspace; `?tab=code` deep-links. `e2e/code.spec.ts`: after a build, the tree's paths equal the API's project file list, clicking `src/screens/HomeScreen.tsx` shows its lines, the foundation group expands to every foundation file and marks them read-only, and the code view contains no input, textarea, select, or contenteditable element.
 
 ### Slice 5.6 Screen list
 

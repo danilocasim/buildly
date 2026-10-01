@@ -7,11 +7,21 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceState } from "@/src/server/workspace";
 import { ChatPanel } from "./ChatPanel";
+import { CodeView } from "./CodeView";
 import { OpenOnPhoneModal } from "./OpenOnPhoneModal";
 import { PreviewPanel } from "./PreviewPanel";
 import { applyDelta, applyEvent, fromServer, isActive, type ClientState } from "./state";
 
-export function Workspace({ initial }: { initial: WorkspaceState }) {
+export type WorkspaceTab = "preview" | "code";
+
+export function Workspace({
+  initial,
+  initialTab = "preview",
+}: {
+  initial: WorkspaceState;
+  initialTab?: WorkspaceTab;
+}) {
+  const [tab, setTab] = useState<WorkspaceTab>(initialTab);
   const [state, setState] = useState<ClientState>(() => fromServer(initial));
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -151,12 +161,42 @@ export function Workspace({ initial }: { initial: WorkspaceState }) {
           />
         </section>
         <section aria-label="Preview" className="hidden min-w-0 flex-1 flex-col lg:flex">
-          <PreviewPanel
-            projectId={projectId}
-            snapshotId={state.project.currentSnapshotId}
-            building={Boolean(active)}
-            phoneVerified={phoneOpened}
-          />
+          <div
+            role="tablist"
+            aria-label="Workspace tabs"
+            className="flex h-12 shrink-0 items-center gap-1 border-b border-line bg-surface px-3"
+          >
+            {(["preview", "code"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={`relative px-4 py-3 text-[14px] capitalize ${tab === t ? "font-medium text-ink" : "text-muted hover:text-ink"}`}
+              >
+                {t}
+                {tab === t && (
+                  <span
+                    className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+          {tab === "preview" ? (
+            <PreviewPanel
+              projectId={projectId}
+              snapshotId={state.project.currentSnapshotId}
+              building={Boolean(active)}
+              phoneVerified={phoneOpened}
+            />
+          ) : (
+            <div className="min-h-0 flex-1 p-4">
+              <CodeView projectId={projectId} snapshotId={state.project.currentSnapshotId} />
+            </div>
+          )}
         </section>
       </div>
     </div>

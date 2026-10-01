@@ -8,11 +8,18 @@ import { Workspace } from "@/src/ui/workspace/Workspace";
 
 export const dynamic = "force-dynamic";
 
-export default async function WorkspacePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function WorkspacePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const user = await currentUser();
   if (!user) redirect("/sign-in");
   const { id } = await params;
+  const { tab } = await searchParams;
   const state = await loadWorkspace(getDeps().db, user.id, id);
   if (!state) notFound();
-  return <Workspace initial={state} />;
+  return <Workspace initial={state} initialTab={tab === "code" ? "code" : "preview"} />;
 }

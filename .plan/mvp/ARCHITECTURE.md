@@ -132,6 +132,7 @@ Route files are thin: each calls a handler in `apps/web/src/server/handlers/` wi
 | `/api/projects/:id/export` | POST | Build ZIP, returns signed download URL |
 | `/api/projects/:id/preview` | GET | Snapshot files assembled for Snack, dependencies, SDK version, player URL, channel, build status |
 | `/api/projects/:id/track` | POST | `preview.*` analytics from the browser |
+| `/api/projects/:id/files` | GET | Code tab: the snapshot's project files and the foundation files, read-only |
 | `/api/projects/:id/phone` | POST | Open on phone: records `preview.phone_opened`, enqueues a `preview` job so the worker's session is live, returns the Expo Go URL |
 | `/api/me` | GET, PATCH | Profile, usage against cap |
 
