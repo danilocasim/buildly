@@ -1,8 +1,9 @@
 import type { SnackFiles, SnackOptions, SnackState } from "snack-sdk";
+import { Snack } from "snack-sdk";
 import { describe, expect, it } from "vitest";
 import { loadFoundationFiles, readManifest } from "@buildly/foundation";
 import { loadStarterFiles } from "@buildly/starters";
-import { createSnackManager, type SnackLike } from "./index";
+import { createSnackManager, expoGoUrlFor, type SnackLike } from "./index";
 
 const manifest = readManifest();
 const foundationFiles = loadFoundationFiles();
@@ -221,5 +222,15 @@ describe("Snack session manager", () => {
     manager.ensureSession({ id: "p1", name: "App" });
     await manager.checkBundle({ id: "p1", name: "App" }, {}, 1000);
     expect(created.map((s) => s.options.webPlayerURL)).toEqual([webPlayerURL, webPlayerURL]);
+  });
+
+  it("expoGoUrlFor equals the URL the real SDK gives a session on that channel (5.4.1)", () => {
+    const channel = "0123456789abcdef";
+    const real = new Snack({ sdkVersion: "54.0.0", channel, online: false, name: "x" });
+    const url = expoGoUrlFor(channel, "54.0.0");
+    expect(url).toBe(real.getState().url);
+    expect(url).toMatch(/^exp:\/\//);
+    expect(url).toContain("snack-channel=0123456789abcdef");
+    expect(url).toContain(encodeURIComponent("exposdk:54.0.0"));
   });
 });

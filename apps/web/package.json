@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3300",
+    "dev": "node scripts/dev.cjs",
     "build": "next build",
     "start": "next start --port 3300",
     "typecheck": "tsc --noEmit",
@@ -12,13 +12,24 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@buildly/checker": "workspace:^",
+    "@buildly/foundation": "workspace:^",
+    "@buildly/generator": "workspace:^",
+    "@buildly/snack": "workspace:^",
+    "@buildly/starters": "workspace:^",
     "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "catalog:",
     "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "drizzle-orm": "^0.45.3",
+    "jsqr": "1.4.0",
     "pg": "^8.23.1",
+    "tailwindcss": "4.3.3",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
@@ -26,9 +37,13 @@
     "@buildly/db": "workspace:*",
     "@buildly/shared": "workspace:*",
     "@buildly/storage": "workspace:*",
+    "lucide-react": "1.49.0",
     "next": "16.3.8",
+    "prism-react-renderer": "^2.4.1",
+    "qrcode": "1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "snack-sdk": "6.6.2",
     "zod": "catalog:"
   }
 }

@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Design tokens from docs/mobile-app-builder-mvp.md §3, as in the mockup (.plan/mvp/mockup). */
+@theme {
+  --color-bg: #faf9f7;
+  --color-surface: #ffffff;
+  --color-ink: #171717;
+  --color-muted: #737373;
+  --color-faint: #a3a3a3;
+  --color-line: #e8e5e1;
+  --color-accent: #ff641a;
+  --color-accent-hover: #ea570f;
+  --color-accent-subtle: #fff0e6;
+  --color-accent-text: #c2410c;
+  --color-success: #16a37b;
+  --color-success-subtle: #e6f7f1;
+  --color-warn: #d97706;
+  --color-warn-subtle: #fff5e0;
+  --color-danger: #dc2626;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgb(23 23 23 / 0.04);
+  --shadow-float: 0 12px 32px rgb(23 23 23 / 0.12);
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent-subtle);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}

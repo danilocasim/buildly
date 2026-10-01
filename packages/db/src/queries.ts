@@ -93,6 +93,14 @@ export const snapshots = {
     const [row] = await db.select().from(snapshotsTable).where(eq(snapshotsTable.id, id));
     return row;
   },
+  /** A project's snapshots, newest first (the history drawer). */
+  async listForProject(db: Executor, projectId: string) {
+    return db
+      .select()
+      .from(snapshotsTable)
+      .where(eq(snapshotsTable.projectId, projectId))
+      .orderBy(desc(snapshotsTable.createdAt));
+  },
 };
 
 export type EventName = import("@buildly/shared").EventName;

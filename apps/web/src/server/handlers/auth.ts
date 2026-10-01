@@ -26,23 +26,21 @@ export async function requestMagicLink(request: Request, deps: Deps): Promise<Re
   return json({ ok: true });
 }
 
-function invalidLink(): Response {
-  return new Response(
-    "This sign-in link is invalid, already used, or expired. Request a new one.",
-    {
-      status: 400,
-      headers: { "content-type": "text/plain; charset=utf-8" },
-    },
-  );
+/** An invalid, used, or expired link lands on the sign-in page's error state (TODO 5.1.2). */
+function invalidLink(deps: Deps): Response {
+  return new Response(null, {
+    status: 302,
+    headers: { location: new URL("/sign-in?error=invalid_link", deps.appUrl).toString() },
+  });
 }
 
 /** GET /api/auth/callback?token= — consumes the link once, creates the user on first sign-in, sets the session cookie. */
 export async function consumeMagicLink(request: Request, deps: Deps): Promise<Response> {
   const token = new URL(request.url).searchParams.get("token");
-  if (!token) return invalidLink();
+  if (!token) return invalidLink(deps);
   const now = deps.now();
   const email = await auth.consumeMagicLink(deps.db, token, now);
-  if (!email) return invalidLink();
+  if (!email) return invalidLink(deps);
   const user = await auth.findOrCreateUser(deps.db, email, now);
   const session = await auth.createSession(deps.db, user.id, now);
   return new Response(null, {

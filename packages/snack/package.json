@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@buildly/shared": "workspace:*",
+    "snack-content": "3.6.2",
     "snack-sdk": "6.6.2"
   }
 }

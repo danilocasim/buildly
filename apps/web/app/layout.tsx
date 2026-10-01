@@ -1,20 +1,19 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import "./globals.css";
 
-export const metadata = { title: "Buildly" };
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
+export const metadata: Metadata = {
+  title: "Buildly",
+  description: "Build mobile apps with AI.",
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body
-        style={{
-          fontFamily: "system-ui, sans-serif",
-          margin: 0,
-          background: "#FAF9F7",
-          color: "#171717",
-        }}
-      >
-        {children}
-      </body>
+    <html lang="en" className={inter.variable}>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }

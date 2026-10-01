@@ -5,3 +5,5 @@ pnpm-lock.yaml
 spikes
 packages/foundation/dist
 .cache
+apps/web/e2e/.state.json
+apps/web/test-results

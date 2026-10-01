@@ -8,6 +8,7 @@
 // every dependency resolves through Snackager; if a client is connected, its compile
 // and runtime errors are reported too. Type and syntax errors are tsc's job (checker).
 import { randomBytes } from "node:crypto";
+import { createRuntimeUrl, SNACK_RUNTIME_URL_ENDPOINT } from "snack-content";
 import {
   Snack,
   type SDKVersion,
@@ -80,6 +81,31 @@ export function appJsonFor(
   return `${JSON.stringify({ expo: { ...app.expo, name: project.name, slug: `buildly-${project.id}` } }, null, 2)}\n`;
 }
 
+/**
+ * The exact file set a Snack session receives: the foundation files (minus tsconfig.json,
+ * editor-only) plus the project files, with app.json carrying the project's name and
+ * unique slug. Used by the worker's sessions and by the web preview (which feeds the same
+ * files to its own snack-sdk instance in the browser).
+ */
+export function assembleSnackFiles(
+  foundationFiles: FileSet,
+  project: Pick<SnackProject, "id" | "name">,
+  projectFiles: FileSet,
+): FileSet {
+  const all: FileSet = { ...foundationFiles, ...projectFiles };
+  all["app.json"] = appJsonFor(foundationFiles["app.json"] ?? '{"expo":{}}', project);
+  delete all["tsconfig.json"];
+  return all;
+}
+
+/**
+ * The Expo Go URL of a session on `channel`, as snack-sdk computes it for its own state,
+ * so the web app can show the QR of the worker's session from the stored channel.
+ */
+export function expoGoUrlFor(channel: string, sdkVersion: string): string {
+  return createRuntimeUrl({ endpoint: SNACK_RUNTIME_URL_ENDPOINT, channel, sdkVersion });
+}
+
 export interface SnackManagerOptions {
   manifest: FoundationManifest;
   foundationFiles: FileSet;
@@ -98,11 +124,10 @@ export function createSnackManager(options: SnackManagerOptions) {
 
   /** Foundation + project files + app.json, as Snack code files. */
   function filesFor(project: Pick<SnackProject, "id" | "name">, projectFiles: FileSet): SnackFiles {
-    const all: FileSet = { ...options.foundationFiles, ...projectFiles };
-    all["app.json"] = appJsonFor(options.foundationFiles["app.json"] ?? '{"expo":{}}', project);
-    delete all["tsconfig.json"]; // editor config; Snack does not use it
     return Object.fromEntries(
-      Object.entries(all).map(([path, contents]) => [path, { type: "CODE" as const, contents }]),
+      Object.entries(assembleSnackFiles(options.foundationFiles, project, projectFiles)).map(
+        ([path, contents]) => [path, { type: "CODE" as const, contents }],
+      ),
     );
   }
 

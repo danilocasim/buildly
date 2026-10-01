@@ -160,7 +160,7 @@ Goal: the boring parts the generator and UI sit on.
   Verified 2026-10-01: `apps/web/src/server/handlers/auth.test.ts`: not invited → 403 `not_invited`; invited → 200 and a `magic_links` row with `used_at` null and only the token hash stored.
 - [x] 3.2.2 `GET /api/auth/callback`: consumes token once, creates `users` row on first login, sets httpOnly secure cookie session.
   Verify: integration test: valid token → 302 to Home with cookie; same token again → 400; expired → 400.
-  Verified 2026-10-01: valid token → 302 to `/` with `HttpOnly; Secure; SameSite=Lax` cookie, user created, invite accepted; reuse → 400; after 15 minutes → 400.
+  Verified 2026-10-01: valid token → 302 to `/` with `HttpOnly; Secure; SameSite=Lax` cookie, user created, invite accepted; reuse → 400; after 15 minutes → 400. Changed in 5.1.2 (2026-10-01): an invalid, used, or expired link now answers 302 to `/sign-in?error=invalid_link` (no cookie) so the sign-in page shows the error state; the tests assert that instead of 400.
 - [x] 3.2.3 Session middleware and `GET /api/me`.
   Verify: integration test: no cookie → 401; valid cookie → user JSON without email of other users.
   Verified 2026-10-01: no cookie or a forged one → 401; a valid cookie → own profile and usage only; an expired session → 401. The "middleware" is `requireUser()` in `src/server/session.ts`.
@@ -336,54 +336,69 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.1 App shell and design system
 
-- [ ] 5.1.1 Next.js app with the brief §3 tokens as CSS variables, base typography, and a sidebar layout (Home, Starters, Settings) that collapses to a drawer under 1024 px.
+- [x] 5.1.1 Next.js app with the brief §3 tokens as CSS variables, base typography, and a sidebar layout (Home, Starters, Settings) that collapses to a drawer under 1024 px.
   Verify: Playwright: at 1280 px the sidebar is visible; at 768 px it is hidden and the drawer opens from the menu button; axe scan reports no serious violations.
-- [ ] 5.1.2 Auth pages: enter email, "check your inbox", error states; redirect to Home after callback.
+  Verified 2026-10-01: `apps/web` now uses Tailwind v4 with the mockup's tokens as `@theme` variables (`app/globals.css`), Inter via `next/font`, and an `app/(shell)` route group whose layout redirects signed-out visitors to `/sign-in` and renders `Shell` (viewport-locked; only the page scrolls) with `Sidebar` (Home, Starters, Settings, a plan card with real builds used, credits, and reset date). Under 1024 px a top bar's menu button opens the sidebar as a drawer (`role=dialog`), closed by navigation, Escape, or the overlay. `apps/web/e2e/shell.spec.ts`: at 1280 px the sidebar is visible with the three links and `0/15 builds`, and Settings gets `aria-current`; at 768 px it is hidden, the menu button opens the drawer, a link closes it, Escape closes it; `@axe-core/playwright` reports no serious or critical violations at 1280 px, in the open drawer at 768 px, and on `/sign-in`. Starters and Settings are placeholder pages until 6.2 and 6.4.
+- [x] 5.1.2 Auth pages: enter email, "check your inbox", error states; redirect to Home after callback.
   Verify: e2e with the console email adapter: full sign-in flow lands on Home.
+  Verified 2026-10-01: `/sign-in` (`src/ui/SignInForm.tsx`): email form → `POST /api/auth/magic-link` → "Check your inbox" with the address; error states for an invalid email, a non-invited email ("Buildly is invite-only right now.", form kept), a network failure, and `?error=invalid_link`, which the callback now redirects to instead of a bare 400 (3.2.2 note). `apps/web/e2e/sign-in.spec.ts` with the console email adapter: the Playwright web server's output is teed to `e2e/.server.log`, the test invites a fresh address, submits the form, reads the printed magic link from the log, opens it, and lands on Home with the sidebar showing that email; opening the link again lands on the error state; a bogus token does too. 12 e2e tests pass.
 
 ### Slice 5.2 Chat panel
 
-- [ ] 5.2.1 `GET /api/projects/:id/stream` SSE endpoint relaying 4.4.4 events and assistant message deltas; reconnect with `Last-Event-ID`.
+- [x] 5.2.1 `GET /api/projects/:id/stream` SSE endpoint relaying 4.4.4 events and assistant message deltas; reconnect with `Last-Event-ID`.
   Verify: integration test: client disconnects mid-run and reconnects; no events are lost or duplicated.
-- [ ] 5.2.2 Chat UI: message list, streamed assistant plan, progress steps (`Plan ready`, `Files written`, `Types checked`, `Preview bundled`) that only turn green on server events, subtle "OpenAI" label near the composer.
+  Verified 2026-10-01: `apps/web/src/server/handlers/stream.ts` (`GET /api/projects/:id/stream`): SSE on a dedicated LISTEN connection from the pool (`Deps.pool`), stored events with their row id as the SSE id, deltas as id-less `delta` frames, `retry: 2000`, a comment ping, and resume from `Last-Event-ID` (or `?after=` on the first connection). `stream.test.ts`: a client reading four events disconnects, two more are published, a reconnect from the last id receives exactly those two, no id repeats; deltas arrive; other users get 404, anonymous 401. A reconnect that aborts before the subscription exists still releases the connection.
+- [x] 5.2.2 Chat UI: message list, streamed assistant plan, progress steps (`Plan ready`, `Files written`, `Types checked`, `Preview bundled`) that only turn green on server events, subtle "OpenAI" label near the composer.
   Verify: e2e with a fake provider: steps appear in order and never before the server event; a run that fails at typecheck shows the failure reason and keeps the previous preview.
-- [ ] 5.2.3 Composer disabled during an active run; Cancel button visible; cancel keeps the last snapshot.
+  Verified 2026-10-01: the workspace page (`app/app/[id]`, outside the shell) loads `loadWorkspace` (`GET /api/projects/:id`: project, messages, generations with recorded steps, `lastEventId`) and `src/ui/workspace/` follows the stream: per-generation threads with the streamed plan, the four steps (`state.ts` turns a step green only from a stored event; the running spinner is UI state), outcome text, and the summary; an "OpenAI" label sits by the composer. `e2e/chat.spec.ts` runs against the real pipeline with `e2e/fake-worker.ts` (the real worker loop, generation handler, checker, and events with a scripted model, registered as a second Playwright web server): Plan ready turns green while Types checked and Preview bundled are not, then each in order, outcome "Build succeeded", the summary, and a snapshot; a build whose type check fails three times ends "Type check failed" with the diagnostics (`src/screens/HomeScreen.tsx`), the type-check step red, and the preview's snapshot unchanged. Found on the way: `createPool` had no `error` listener, so a terminated idle connection (here the e2e database being recreated under a running worker; in production a Postgres restart) crashed the process; it now logs and the pool reconnects (`packages/db/src/client.test.ts`).
+- [x] 5.2.3 Composer disabled during an active run; Cancel button visible; cancel keeps the last snapshot.
   Verify: e2e: click Cancel mid-run → status "Cancelled", preview unchanged, composer re-enabled.
-- [ ] 5.2.4 Cap and error handling: 429 shows the reason and `resetAt`; the prompt text is preserved.
+  Verified 2026-10-01: the composer is disabled while a generation is active and shows Cancel, which calls `POST /api/generations/:id/cancel`. `chat.spec.ts`: Cancel during a stalled first turn → outcome "Cancelled", generation status `cancelled`, preview still "No preview yet", composer enabled, Cancel gone.
+- [x] 5.2.4 Cap and error handling: 429 shows the reason and `resetAt`; the prompt text is preserved.
   Verify: e2e: exceed the hourly cap → inline message, textarea still contains the prompt.
+  Verified 2026-10-01: a 4xx from `POST /api/projects/:id/messages` shows its message inline with "Try again after <resetAt>" (a `<time>` element) and keeps the prompt. `chat.spec.ts`: a user with ten builds in the hour sends an eleventh → the hourly message and reset time show, the textarea still holds the prompt.
 
 ### Slice 5.3 Preview panel
 
-- [ ] 5.3.1 Web player iframe (the self-hosted player from 4b.0.1, D18) inside a phone frame, wired through the SDK web preview reference; CSP `frame-src` limited to the player origin; label "Web preview".
+- [x] 5.3.1 Web player iframe (the self-hosted player from 4b.0.1, D18) inside a phone frame, wired through the SDK web preview reference; CSP `frame-src` limited to the player origin; label "Web preview".
   Verify: e2e (tagged `@snack`): iframe `src` equals the session `webPreviewURL` on the player origin; any other `src` is blocked by CSP (checked via console error).
-- [ ] 5.3.2 Two viewport presets (small and large phone), build status chip, Refresh, Reset demo data (posts a message the foundation listens for, or reloads with a `reset=1` param).
+  Verified 2026-10-01: the player only receives code by postMessage from a snack-sdk instance in the same page, so the workspace runs its own offline instance (`src/ui/workspace/usePlayer.ts`) fed by `GET /api/projects/:id/preview` (the current snapshot assembled exactly as a worker session sends it, via `assembleSnackFiles` shared with `packages/snack`, plus dependencies, SDK version, and `SNACK_WEB_PLAYER_URL`); the worker's online session keeps serving Expo Go. The iframe sits in a phone frame under a "Web preview" label; `next.config.ts` sets `Content-Security-Policy: frame-src <player origin>` on `/app/*`. `e2e/preview.spec.ts`: the iframe `src` is `<player>/v2/54/index.html?…&origin=http://localhost:3310` with no CSP error; an injected `https://example.com` frame is refused by `frame-src`. `@snack` (`SNACK_LIVE=1 … -g @snack`, passed 2026-10-01): the player connected through CloudFront and Snack and reported `ok` in about 5 s. Found on the way: Turbopack cannot bundle the foundation's Node loader (`new URL("..", import.meta.url)`), so the digest script now also emits the committed `dist/foundation-files.json`, which the web app imports; CI diffs all of `packages/foundation/dist`.
+- [x] 5.3.2 Two viewport presets (small and large phone), build status chip, Refresh, Reset demo data (posts a message the foundation listens for, or reloads with a `reset=1` param).
   Verify: e2e: preset toggles the frame dimensions; Reset triggers `preview.reset_demo_data` event; **manual**: demo pill reappears after reset.
-- [ ] 5.3.3 Browser and phone verification shown separately: "Web: bundled ✓ / Phone: not verified" until the user opens the QR modal.
+  Verified 2026-10-01: Small/Large phone presets (`PhoneFrame`, 300×600 and 330×680), a Web status chip (bundling… / bundled ✓ / error / no build yet), Refresh (remounts the iframe; the SDK re-sends the code), and Reset demo data, which posts `buildly:reset-demo-data` into the player; the foundation's `usePreviewBridge` (read-only `src/components/PreviewBridge.ts`, constant pinned to `@buildly/shared` by tests on both sides) reseeds and remounts the app. `POST /api/projects/:id/track` records `preview.reset_demo_data` and `preview.web_loaded` (`load_ms`). `preview.spec.ts`: the preset shrinks the frame; Reset writes the analytics row. The manual item ran as a live test instead (`@snack Reset demo data reseeds…`): with the journal starter in the player, deleting "Sprint review" removes it; Reset brings it back with the demo pill visible.
+- [x] 5.3.3 Browser and phone verification shown separately: "Web: bundled ✓ / Phone: not verified" until the user opens the QR modal.
   Verify: e2e: after a successful build the two statuses render with distinct values.
+  Verified 2026-10-01: `status-web` and `status-phone` chips; phone stays "not verified" until the QR modal opens (5.4). `preview.spec.ts`: after a successful build the chips read `bundled ✓` and `not verified`.
 
 ### Slice 5.4 Open on phone
 
-- [ ] 5.4.1 Modal with QR of the Expo Go `url`, Expo Go install links, and the one-line note about internet access; emits `preview.phone_opened`.
+- [x] 5.4.1 Modal with QR of the Expo Go `url`, Expo Go install links, and the one-line note about internet access; emits `preview.phone_opened`.
   Verify: unit test decodes the rendered QR (jsQR) to the session URL; e2e: opening the modal writes the analytics row.
-- [ ] 5.4.2 Starter opens in Expo Go from the workspace QR.
+  Verified 2026-10-01: `src/ui/workspace/OpenOnPhoneModal.tsx`: QR (SVG from `qrcode` modules, `src/ui/workspace/qr.ts`) of the session's Expo Go URL, the App Store and Play links, the internet-access note, Escape and overlay to close. The URL comes from `expoGoUrlFor(channel, sdkVersion)` in `packages/snack` (snack-content's `createRuntimeUrl` with the stored channel; a test checks it equals a real `Snack` instance's `url`). Opening calls `POST /api/projects/:id/phone`, which records `preview.phone_opened` and enqueues a `preview` job so the worker's session exists (recreated from the stored channel after a worker restart) before Expo Go connects; the modal polls until the channel exists. `qr.test.ts`: jsQR decodes the rendered modules back to the URL. `e2e/phone.spec.ts`: before a build the modal explains and queues nothing; opening writes the analytics row and flips the phone chip to "QR opened"; after a build the QR and a URL with the session's channel show and a `preview` job was queued.
+- [~] 5.4.2 Starter opens in Expo Go from the workspace QR.
   Verify: **manual** on iOS and Android; note date and devices here.
+  Pending the founder's device test (see the steps in the 5.4 hand-off): `pnpm services:up`, `pnpm db:migrate`, `pnpm db:seed`, run the web app and the worker, sign in as admin@buildly.test, open a seeded starter project's workspace, Open on phone, scan with Expo Go on iOS and Android; note date and devices here.
 
 ### Slice 5.5 Code tab
 
-- [ ] 5.5.1 Read-only file tree from the current snapshot and a syntax-highlighted viewer (Shiki or Prism), foundation files shown collapsed under a "Foundation (read-only)" group.
+- [x] 5.5.1 Read-only file tree from the current snapshot and a syntax-highlighted viewer (Shiki or Prism), foundation files shown collapsed under a "Foundation (read-only)" group.
   Verify: e2e: tree lists every project file in the snapshot; clicking a file shows its contents; no editable inputs exist.
+  Verified 2026-10-01: `GET /api/projects/:id/files` returns the current snapshot's project files and the foundation files (from `foundation-files.json`); `src/ui/workspace/CodeView.tsx` lists the project files, the foundation files collapsed under "Foundation (read-only)", and a line-numbered viewer highlighted by `prism-react-renderer` (tsx, ts, json). Preview and Code are tabs on the workspace; `?tab=code` deep-links. `e2e/code.spec.ts`: after a build, the tree's paths equal the API's project file list, clicking `src/screens/HomeScreen.tsx` shows its lines, the foundation group expands to every foundation file and marks them read-only, and the code view contains no input, textarea, select, or contenteditable element.
 
 ### Slice 5.6 Screen list
 
-- [ ] 5.6.1 Derive screens from the `finish` tool output stored on the generation, falling back to route registrations in files; collapsible panel.
+- [x] 5.6.1 Derive screens from the `finish` tool output stored on the generation, falling back to route registrations in files; collapsible panel.
   Verify: unit test: journal starter yields Entries, Entry detail, New entry, Tags; e2e: panel collapses under 1024 px.
+  Verified 2026-10-01: the worker stores the `finish` tool's validated screen names on `generations.screens` (migration `0003_generation_screens`); `loadWorkspace` serves the latest successful build's list, falling back to `screensFromNavigation` (`packages/shared/src/screens.ts`) over the current snapshot's `src/navigation.tsx`: routes whose component is imported from `./screens/`, humanized, skipping nested navigators and foundation screens. `screens.test.ts`: the journal starter yields Entries, Entry detail, New entry, Tags (registration order Entries, Tags, Entry detail, New entry); the template yields Home. The panel sits beside the preview, expanded from 1024 px and collapsed below (`matchMedia`), with a toggle. `e2e/screens.spec.ts`: after a build the list shows Home at 1280 px; the toggle collapses it; at 768 px it loads collapsed and expands on the toggle. The preview section now shows from 768 px (chat 360 px) so that collapse is visible.
 
 ### Slice 5.7 Toolbar
 
-- [ ] 5.7.1 Back, app icon, inline-editable name (PATCH on blur), "Expo + TypeScript" badge, Open on phone, Export code.
+- [x] 5.7.1 Back, app icon, inline-editable name (PATCH on blur), "Expo + TypeScript" badge, Open on phone, Export code.
   Verify: e2e: rename persists after reload; Export triggers 6.3.
-- [ ] 5.7.2 Snapshot history drawer with Restore.
+  Verified 2026-10-01: toolbar with Back, the project icon (by starter, else a phone), the inline name (`PATCH /api/projects/:id`, saved on blur or Enter, Escape reverts, 1–80 chars; `projects-toolbar.test.ts`), the "Expo + TypeScript" badge, History, Open on phone, and Export code, which POSTs `/api/projects/:id/export` and shows "Export is not available yet." until 6.3.2 exists. `e2e/toolbar.spec.ts`: a rename persists after reload (and in the API); Export code issues the POST.
+- [x] 5.7.2 Snapshot history drawer with Restore.
   Verify: e2e: after two builds, history shows two entries; Restore of the first refreshes the code tab to its files.
+  Verified 2026-10-01: `GET /api/projects/:id/snapshots` lists a project's snapshots newest first with the current one flagged and each one's label (the build's prompt, "Restored version", or "Starter"); `src/ui/workspace/SnapshotDrawer.tsx` shows them with Restore (disabled while a build runs) calling 4.6.2's restore, then resyncs the workspace. `e2e/history.spec.ts`: after two builds the drawer shows two entries with the newest current; Restore of the first adds a third, current "Restored version" entry (history is never edited), and the code tab's HomeScreen shows the first build's contents under the restored snapshot. The fake worker now writes the prompt into the file so builds differ.
 
 ---
 

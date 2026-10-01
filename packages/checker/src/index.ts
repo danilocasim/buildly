@@ -83,7 +83,9 @@ export function runTypecheck(
       [tsc, "--noEmit", "-p", "tsconfig.json", "--pretty", "false"],
       {
         cwd: tmpDir,
-        env: { PATH: process.env.PATH ?? "" },
+        // Only PATH. NODE_ENV is set because Next.js's types, in the app that imports the
+        // checker for its e2e worker, make it a required key of ProcessEnv.
+        env: { PATH: process.env.PATH ?? "", NODE_ENV: "production" },
         stdio: ["ignore", "pipe", "pipe"],
       },
     );

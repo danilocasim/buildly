@@ -1,6 +1,6 @@
 // Foundation entry point (read-only). The project supplies src/navigation.tsx,
 // src/data/models.ts (schemaVersion), and src/data/seed.ts (seed).
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
@@ -11,7 +11,8 @@ import {
   reportRuntimeError,
   ReseedNotice,
 } from "./src/components";
-import { openStore, type OpenStoreResult } from "./src/data/store";
+import { usePreviewBridge } from "./src/components/PreviewBridge";
+import { openStore, reset, type OpenStoreResult } from "./src/data/store";
 import { schemaVersion } from "./src/data/models";
 import { seed } from "./src/data/seed";
 import { RootNavigator } from "./src/navigation";
@@ -33,6 +34,8 @@ const navigationTheme = {
 
 export default function App() {
   const [store, setStore] = useState<OpenStoreResult | null>(null);
+  // Bumped after a demo-data reset so every screen remounts on the fresh data.
+  const [epoch, setEpoch] = useState(0);
 
   useEffect(() => {
     openStore({ schemaVersion, seed }).then(setStore, (error: unknown) => {
@@ -41,13 +44,22 @@ export default function App() {
     });
   }, []);
 
+  usePreviewBridge(
+    useCallback(() => {
+      reset().then(
+        () => setEpoch((n) => n + 1),
+        (error: unknown) => reportRuntimeError(error, false),
+      );
+    }, []),
+  );
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
         <ErrorBoundary>
           {store ? (
             <View style={{ flex: 1 }}>
-              <NavigationContainer theme={navigationTheme}>
+              <NavigationContainer key={epoch} theme={navigationTheme}>
                 <RootNavigator />
               </NavigationContainer>
               <ReseedNotice visible={store.didReseed} />

@@ -187,6 +187,8 @@ export const generations = pgTable(
     costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
     errorCode: text("error_code"),
     errorDetail: text("error_detail"),
+    /** Screen names from the model's `finish` tool (validated against routes), on success. */
+    screens: jsonb("screens").$type<string[]>(),
     createdAt: createdAt(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),

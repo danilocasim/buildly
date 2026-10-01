@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Buildly is an AI mobile app builder: a user describes an app or picks a starter, the AI generates a React Native + Expo + TypeScript project, the user previews it in the browser and in Expo Go, refines it in chat, and exports the source.
 
-**The repo is in implementation.** Phases 0–4 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), the web app's auth, project, build, cancel, and restore APIs plus `/admin/invites` (`apps/web`, Next.js 16), and the generation engine: OpenAI provider, tool layer, context builder, and `runGeneration` (`packages/generator`), Snack sessions (`packages/snack`), and the eval harness (`packages/eval`). `packages/web-player` builds Buildly's copy of the Snack web player (Phase 4b, D18). `packages/exporter` is a placeholder until Phase 6; the web UI is Phase 5–6.
+**The repo is in implementation.** Phases 0–5 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), the web app's auth, project, build, cancel, and restore APIs plus `/admin/invites` (`apps/web`, Next.js 16), and the generation engine: OpenAI provider, tool layer, context builder, and `runGeneration` (`packages/generator`), Snack sessions (`packages/snack`), and the eval harness (`packages/eval`). `packages/web-player` builds Buildly's copy of the Snack web player (Phase 4b, D18). The web workspace (`apps/web/app/app/[id]`, `src/ui/workspace/`) has the chat with streamed progress, the web preview on that player, Open on phone, the code tab, the screen list, and the toolbar with history and restore (Phase 5). `packages/exporter` and the Home, Starters, and Settings pages are Phase 6.
 
 | Path | Role |
 | --- | --- |
@@ -81,7 +81,7 @@ pnpm test                              # every package (Vitest; Jest for foundat
 pnpm --filter foundation test          # one package (scope optional: @buildly/foundation)
 pnpm --filter shared exec vitest run src/config.test.ts   # one Vitest file
 pnpm --filter starters exec jest --selectProjects journal # one starter's smoke tests
-pnpm --filter foundation digest        # regenerate dist/api-digest.md (CI fails if stale)
+pnpm --filter foundation digest        # regenerate dist/api-digest.md and dist/foundation-files.json (CI fails if stale)
 pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
 pnpm test:snack                        # live Snack integration test (network; skipped by `pnpm test` and CI)
@@ -109,7 +109,7 @@ On this Mac `/opt/homebrew/bin/docker` is an npm documentation generator, not Do
 - Shipped app code is standalone: it may import only allowlisted packages and relative paths, never `@buildly/*`. Anything both sides need (such as `RUNTIME_ERROR_PREFIX`) is duplicated and pinned by a cross-check test.
 - A starter is only project-owned files (`src/navigation.tsx`, `src/screens/**`, `src/data/models.ts`, `src/data/seed.ts`). Helpers go in `models.ts`, since other paths are not writable. Screens take no props and use `useNavigation`/`useRoute` hooks.
 - Jest tests (D19) in these two packages: `jest.resetModules()` gives a fresh store but a second React, so re-require `@testing-library/react-native/pure` after it and use the queries `render` returns; `toBeOnTheScreen` only works with the top-level instance. Bottom tabs are found with `getByLabelText(/^Name, tab/)`. `packages/starters/test/resolver.cjs` overlays a starter on the foundation.
-- After changing any exported component props or store signature, run `pnpm --filter foundation digest` and commit `dist/api-digest.md`.
+- After changing any exported component props, store signature, or shipped file, run `pnpm --filter foundation digest` and commit `dist/` (the digest and `foundation-files.json`, which the web app imports because Turbopack cannot bundle `lib/`'s directory reads).
 
 ## Local services and database
 
@@ -121,14 +121,17 @@ pnpm db:migrate / db:migrate:down      # apply / revert the newest migration (DA
 pnpm db:generate                       # after editing packages/db/src/schema.ts; also write migrations/down/<tag>.sql
 pnpm db:seed                           # admin@buildly.test (admin), 3 invites, a project per starter; idempotent
 pnpm db:grant-credits <email> <n> [note]   # top-up build credits (admin grant until Stripe, D21)
-pnpm --filter @buildly/web dev         # http://localhost:3300 (needs a .env with the local values from .env.example)
-pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310
-pnpm --filter @buildly/worker start    # the worker loop
+pnpm --filter @buildly/web dev         # http://localhost:3300; loads the repo-root .env (copy .env.example) via --env-file-if-exists
+pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310, fake worker on :3311
+SNACK_LIVE=1 pnpm --filter @buildly/web exec playwright test -g @snack   # live preview checks through CloudFront and Snack (network)
+pnpm --filter @buildly/worker start    # the worker loop; loads the repo-root .env the same way (production sets real env vars)
 ```
 
 - The db scripts and tests never read `.env`: they default to the docker services, so a `DATABASE_URL` pointing at another Postgres cannot be migrated by accident.
 - Each db integration test file gets its own database (`createTestDatabase` from `@buildly/db/testing`) and each storage test its own bucket (`@buildly/storage/testing`).
+- `apps/web` UI: Tailwind v4 with the design tokens in `app/globals.css` (`bg-bg`, `text-muted`, `border-line`, `bg-accent`, `text-accent-text`, `rounded-card`, …; use these, not raw colors); signed-in pages live in `app/(shell)` (sidebar plus drawer under 1024 px, `src/ui/Shell.tsx`), `/sign-in` and `/admin` outside it. Next's route announcer is also `role="alert"`, so e2e tests target alerts by test id.
+- Web e2e builds run through `apps/web/e2e/fake-worker.ts`: the real worker loop and generation handler with a scripted model (prompts containing "break the types" or "take your time" pick the failing and stalling scripts), started by Playwright as a second web server. The workspace UI turns a step green only from a stored server event (`src/ui/workspace/state.ts`).
 - Handlers in `apps/web/src/server/handlers/` take `Deps`; test them with `createHarness()` (fresh database and bucket, recorded emails, settable clock, `signIn()` for a session cookie; `afterAll(() => h.cleanup())`).
 - `tx.rollback()` throws an error named `DrizzleError`; detect it with `isRollback(error)` from `@buildly/db`, not by name.
-- In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log.
+- In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log. The e2e web server's output is teed to `apps/web/e2e/.server.log`, which `sign-in.spec.ts` reads the link from.
 - Usage is governed only by plans and top-up build credits (D10, D21); there is no bring-your-own-key. All cap rules live in `packages/shared/src/limits.ts` (`checkBuild` returns who pays: `plan` or `credit`).
