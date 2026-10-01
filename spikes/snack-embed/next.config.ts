@@ -5,6 +5,6 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   turbopack: { root: __dirname },
   // 127.0.0.1 is the "other origin" of the 4b.0.1 negative check (packages/web-player/scripts/verify.ts).
-  allowedDevOrigins: ["127.0.0.1"],
+  allowedDevOrigins: ["127.0.0.1", "*.trycloudflare.com"],
 };
 export default config;

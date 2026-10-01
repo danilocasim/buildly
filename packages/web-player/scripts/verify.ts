@@ -53,11 +53,19 @@ async function run(origin: string, expectConnected: boolean) {
   let s1: S1 | undefined;
   const forbidden = () =>
     frameConsole.some((line) => /Access to origin .* is forbidden/.test(line));
+  // The client reports "ok" before it evaluates the code, then "error" if that fails. So
+  // once it has connected and reloaded the files, it must still be ok after a settle time.
+  const SETTLE_MS = 12_000;
+  let okSince: number | undefined;
   for (;;) {
     s1 = await state(page);
     const web = s1?.clients?.find((c) => c.platform === "web");
-    if (expectConnected && web?.status === "ok") break;
-    if (!expectConnected && forbidden() && Date.now() - started > 15_000) break;
+    const reloaded = frameConsole.some((line) => /Reloading, files changed/.test(line));
+    if (expectConnected) {
+      if (web?.status === "error") break;
+      if (web?.status === "ok" && reloaded) okSince ??= Date.now();
+      if (okSince && Date.now() - okSince > SETTLE_MS) break;
+    } else if (forbidden() && Date.now() - started > 15_000) break;
     if (Date.now() - started > timeoutMs) break;
     await page.waitForTimeout(1000);
   }
@@ -69,6 +77,7 @@ async function run(origin: string, expectConnected: boolean) {
     iframeSrc,
     playerUsed: Boolean(iframeSrc?.startsWith(values.player!.replace("%%SDK_VERSION%%", ""))),
     webClient: web ?? null,
+    settledOk: Boolean(okSince && Date.now() - okSince > SETTLE_MS && web?.status === "ok"),
     forbiddenLogged: forbidden(),
     seconds: Math.round((Date.now() - started) / 1000),
     frameConsole: frameConsole.filter((l) => /origin|forbidden|error/i.test(l)).slice(0, 12),
@@ -76,8 +85,7 @@ async function run(origin: string, expectConnected: boolean) {
 }
 
 const allowed = await run(values.page, true);
-const allowedOk =
-  allowed.playerUsed && allowed.webClient?.status === "ok" && !allowed.forbiddenLogged;
+const allowedOk = allowed.playerUsed && allowed.settledOk && !allowed.forbiddenLogged;
 console.log(JSON.stringify({ allowed: { ...allowed, ok: allowedOk } }, null, 2));
 
 let forbiddenOk: boolean | undefined;
