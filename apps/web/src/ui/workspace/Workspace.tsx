@@ -2,13 +2,15 @@
 
 // The workspace: toolbar (grows in 5.7), chat (5.2), preview (5.3). Follows the project's
 // SSE stream and resyncs the stored state from the API when a build finishes.
-import { ChevronLeft, Smartphone } from "lucide-react";
+import { ChevronLeft, Code2, History, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceState } from "@/src/server/workspace";
 import { ChatPanel } from "./ChatPanel";
 import { CodeView } from "./CodeView";
+import { ProjectIcon } from "../ProjectIcon";
 import { OpenOnPhoneModal } from "./OpenOnPhoneModal";
+import { SnapshotDrawer } from "./SnapshotDrawer";
 import { PreviewPanel } from "./PreviewPanel";
 import { applyDelta, applyEvent, fromServer, isActive, type ClientState } from "./state";
 
@@ -83,6 +85,37 @@ export function Workspace({
 
   const active = state.generations.find(isActive);
 
+  // Toolbar (TODO 5.7.1): inline rename saved on blur; Export code calls the export API (6.3).
+  const [name, setName] = useState(state.project.name);
+  const [exportNote, setExportNote] = useState<string>();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const saveName = useCallback(async () => {
+    const next = name.trim();
+    if (!next || next === state.project.name) {
+      setName(state.project.name);
+      return;
+    }
+    const response = await fetch(`/api/projects/${projectId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: next }),
+    });
+    if (response.ok) {
+      const body = (await response.json()) as { name: string };
+      setState((current) => ({ ...current, project: { ...current.project, name: body.name } }));
+      setName(body.name);
+    } else setName(state.project.name);
+  }, [name, projectId, state.project.name]);
+  const exportCode = useCallback(async () => {
+    setExportNote(undefined);
+    const response = await fetch(`/api/projects/${projectId}/export`, { method: "POST" });
+    if (response.ok) {
+      const body = (await response.json()) as { url?: string };
+      if (body.url) window.location.assign(body.url);
+    } else
+      setExportNote(response.status === 404 ? "Export is not available yet." : "Export failed.");
+  }, [projectId]);
+
   // Open on phone (TODO 5.4.1): the modal records the opening and asks the worker to push
   // the snapshot, so the session behind the QR is live; the URL arrives once a channel exists.
   const [phone, setPhone] = useState<{ open: boolean; url: string | null; hasSnapshot: boolean }>({
@@ -119,18 +152,54 @@ export function Workspace({
         <Link href="/" aria-label="Back" className="rounded-md p-1.5 text-muted hover:bg-line/60">
           <ChevronLeft size={20} aria-hidden="true" />
         </Link>
-        <h1 className="text-[16px] font-semibold">{state.project.name}</h1>
+        <ProjectIcon starterSlug={state.project.starterSlug} size="sm" />
+        <h1 className="sr-only">{state.project.name}</h1>
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          onBlur={() => void saveName()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Escape") {
+              setName(state.project.name);
+              event.currentTarget.blur();
+            }
+          }}
+          aria-label="Project name"
+          maxLength={80}
+          className="min-w-0 rounded-md bg-transparent px-1.5 py-1 text-[16px] font-semibold outline-none hover:bg-line/40 focus:bg-line/40"
+          style={{ width: `${Math.min(Math.max(name.length, 8), 40)}ch` }}
+        />
         <span className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-[12px] text-muted">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" /> Expo +
           TypeScript
         </span>
         <div className="ml-auto flex items-center gap-2">
+          {exportNote && (
+            <span role="status" className="text-[12px] text-muted">
+              {exportNote}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] text-muted hover:bg-line/50 hover:text-ink"
+          >
+            <History size={16} aria-hidden="true" /> History
+          </button>
           <button
             type="button"
             onClick={() => void openOnPhone()}
             className="flex items-center gap-2 rounded-lg border border-line px-3.5 py-2 text-[14px] font-medium hover:bg-bg"
           >
             <Smartphone size={16} aria-hidden="true" /> Open on phone
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportCode()}
+            className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-[14px] font-medium text-ink hover:bg-accent-hover"
+          >
+            <Code2 size={16} aria-hidden="true" /> Export code
           </button>
         </div>
       </header>
@@ -142,7 +211,17 @@ export function Workspace({
         />
       )}
 
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
+        {historyOpen && (
+          <SnapshotDrawer
+            projectId={projectId}
+            building={Boolean(active)}
+            onClose={() => setHistoryOpen(false)}
+            onRestored={async () => {
+              await resync();
+            }}
+          />
+        )}
         <section
           aria-label="Chat"
           className="flex w-full min-w-0 flex-col border-r border-line bg-surface md:w-[360px] md:shrink-0 lg:w-[420px]"

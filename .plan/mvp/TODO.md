@@ -393,10 +393,12 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.7 Toolbar
 
-- [ ] 5.7.1 Back, app icon, inline-editable name (PATCH on blur), "Expo + TypeScript" badge, Open on phone, Export code.
+- [x] 5.7.1 Back, app icon, inline-editable name (PATCH on blur), "Expo + TypeScript" badge, Open on phone, Export code.
   Verify: e2e: rename persists after reload; Export triggers 6.3.
-- [ ] 5.7.2 Snapshot history drawer with Restore.
+  Verified 2026-10-01: toolbar with Back, the project icon (by starter, else a phone), the inline name (`PATCH /api/projects/:id`, saved on blur or Enter, Escape reverts, 1–80 chars; `projects-toolbar.test.ts`), the "Expo + TypeScript" badge, History, Open on phone, and Export code, which POSTs `/api/projects/:id/export` and shows "Export is not available yet." until 6.3.2 exists. `e2e/toolbar.spec.ts`: a rename persists after reload (and in the API); Export code issues the POST.
+- [x] 5.7.2 Snapshot history drawer with Restore.
   Verify: e2e: after two builds, history shows two entries; Restore of the first refreshes the code tab to its files.
+  Verified 2026-10-01: `GET /api/projects/:id/snapshots` lists a project's snapshots newest first with the current one flagged and each one's label (the build's prompt, "Restored version", or "Starter"); `src/ui/workspace/SnapshotDrawer.tsx` shows them with Restore (disabled while a build runs) calling 4.6.2's restore, then resyncs the workspace. `e2e/history.spec.ts`: after two builds the drawer shows two entries with the newest current; Restore of the first adds a third, current "Restored version" entry (history is never edited), and the code tab's HomeScreen shows the first build's contents under the restored snapshot. The fake worker now writes the prompt into the file so builds differ.
 
 ---
 

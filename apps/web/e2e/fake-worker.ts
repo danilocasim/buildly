@@ -45,7 +45,8 @@ const provider: Provider = {
         yield { type: "text_delta", delta: chunk };
         await sleep(20);
       }
-      const contents = `${template[HOME]!}\n// edited by the e2e worker\n${
+      // The prompt goes into the file, so builds differ (history and restore are observable).
+      const contents = `${template[HOME]!}\n// edited by the e2e worker: ${prompt.replace(/[\r\n]+/g, " ")}\n${
         broken ? 'export const broken: number = "not a number";\n' : ""
       }`;
       yield {
