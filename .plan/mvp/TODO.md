@@ -293,9 +293,9 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 - [x] 4.7.3 `pnpm eval:report` markdown table with the EVAL.md thresholds and pass/fail flags.
   Verify: run on the dry-run JSON; table renders with threshold columns.
   Verified 2026-10-01: `pnpm eval:report .eval/2026-10-01-gpt-6.1-sol+gpt-6-luna-dry-run.json` printed the threshold table (Metric, Value, Target, Result, Maps to) with the six EVAL.md metrics. Metrics without runs are `n/a`, not pass or fail. The dry-run banner and a per-task table follow. `src/report.test.ts` checks the computations, including blended cost (1 initial : 3 edits).
-- [~] 4.7.4 Nightly CI job running `--tasks smoke` against the configured model with the real API key, posting the JSON to storage.
+- [x] 4.7.4 Nightly CI job running `--tasks smoke` against the configured model with the real API key, posting the JSON to storage.
   Verify: one nightly run visible in Actions with an uploaded artifact.
-  In progress 2026-10-01: `.github/workflows/eval-nightly.yml` (cron 18:00 UTC plus `workflow_dispatch`) runs `pnpm eval --tasks smoke --runs 1`, uploads `.eval/*.json` as an artifact, writes the table to the job summary, and copies the JSON to S3 when `EVAL_STORAGE_BUCKET` and the `EVAL_STORAGE_*` secrets exist. Still needed: the `OPENAI_API_KEY` repository secret (none is set) and the workflow on `main`, since scheduled and manual runs only start from the default branch. Then one run checks this off.
+  Verified 2026-10-01: `.github/workflows/eval-nightly.yml` (cron 18:00 UTC plus `workflow_dispatch`) runs `pnpm eval --tasks smoke --runs 1`, uploads `.eval/*.json` as an artifact, writes the table to the job summary, and copies the JSON to S3 when `EVAL_STORAGE_BUCKET` and the `EVAL_STORAGE_*` secrets exist (not set yet; the artifact is the record until then). First run, dispatched manually after merging #7 with the `OPENAI_API_KEY` secret: Actions run 36818972644, success, artifact `eval-nightly-36818972644`. Results with gpt-6.1-sol / gpt-6-luna: T4 and T7 passed (34.6 s, 19.2 s); T1 built (tsc, bundle, routes, seed ok; 130.8 s, $0.107) but failed `models Entry`, since the model exported its entry type under another name. Blended cost $0.029 per build, under the $0.04 guardrail. One smoke run is not E1; the P3 decision still needs `--tasks all --runs 3`.
 
 ---
 

@@ -113,13 +113,12 @@ export const hasModels =
   (...names: string[]): Check =>
   (o) => {
     const models = o.files["src/data/models.ts"] ?? "";
-    const missing = names.filter(
-      (n) => !new RegExp(`export\\s+(?:interface|type)\\s+${n}\\b`).test(models),
-    );
+    const exported = [...models.matchAll(/export\s+(?:interface|type)\s+(\w+)/g)].map((m) => m[1]!);
+    const missing = names.filter((n) => !exported.includes(n));
     return result(
       `models ${names.join(", ")}`,
       missing.length === 0,
-      `missing ${missing.join(", ")}`,
+      `missing ${missing.join(", ")}; exported types: ${exported.join(", ") || "none"}`,
     );
   };
 

@@ -52,6 +52,22 @@ const template = loadTemplateFiles();
 describe("task checks", () => {
   it("T1: the journal starter passes; the bare template fails", () => {
     expect(failures("T1", outcome({ baseFiles: template, files: journal }))).toEqual([]);
+    // A failed model check names what was exported instead, so a report is diagnosable.
+    const renamed = {
+      ...journal,
+      "src/data/models.ts": journal["src/data/models.ts"]!.replace(
+        "export interface Entry ",
+        "export interface JournalEntry ",
+      ),
+    };
+    expect(
+      runChecks(task("T1").checks, outcome({ baseFiles: template, files: renamed })).find(
+        (c) => c.name === "models Entry",
+      ),
+    ).toMatchObject({
+      ok: false,
+      detail: expect.stringContaining("exported types: Mood, JournalEntry, Tag"),
+    });
     expect(failures("T1", outcome({ baseFiles: template, files: template }))).toEqual([
       "entries list and entry detail",
       "models Entry",
