@@ -26,6 +26,10 @@ const shared = {
 const schemas = {
   web: z.object({
     ...shared,
+    // Buildly's self-hosted Snack web player (D18, packages/web-player), with
+    // %%SDK_VERSION%% where snack-sdk puts the SDK major. Unset falls back to Expo's
+    // hosted player, which only works from Expo's own origins and localhost.
+    SNACK_WEB_PLAYER_URL: optional(z.url()),
     EMAIL_PROVIDER_API_KEY: required,
     EMAIL_FROM: required,
     SESSION_SECRET: z.string().min(32, "must be at least 32 characters"),

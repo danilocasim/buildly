@@ -30,12 +30,18 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
 
   let files: Record<string, string>;
   if (starter && /^[a-z-]+$/.test(starter)) {
-    const foundationFiles = read(foundationDir, [
-      join(foundationDir, "App.tsx"),
-      join(foundationDir, "src/data/store.ts"),
-      ...walk(join(foundationDir, "src/theme")),
-      ...walk(join(foundationDir, "src/components")),
-    ]);
+    // Everything the foundation ships (as packages/snack sends it): App.tsx, app.json, and
+    // src/ minus the project-owned template files, which the starter provides.
+    const projectOwned = /^src\/(navigation\.tsx|screens\/|data\/(models|seed)\.ts)/;
+    const foundationFiles = Object.fromEntries(
+      Object.entries(
+        read(foundationDir, [
+          join(foundationDir, "App.tsx"),
+          join(foundationDir, "app.json"),
+          ...walk(join(foundationDir, "src")),
+        ]),
+      ).filter(([path]) => !projectOwned.test(path)),
+    );
     const starterDir = join(repo, "packages/starters", starter);
     files = { ...foundationFiles, ...read(starterDir, walk(join(starterDir, "src"))) };
   } else {

@@ -12,7 +12,7 @@ Where each part of Buildly runs, what it costs, and how to set it up. Prices wer
 | DNS, TLS, and domain | Cloudflare | Free, plus about $12 a year for the domain |
 | AI generation | OpenAI API | Pay per token, about $0.04 per build with model routing, $0.12 if the flagship does everything |
 | Previews on phone (Expo Go) | Expo Snack | Free, hosted by Expo |
-| Web preview player | Self-hosted build of Snack's web player (D18), static files on its own domain | Static hosting (Cloudflare Pages or S3; chosen in TODO 4b.0.1), about $0 |
+| Web preview player | Self-hosted build of Snack's web player (D18, `packages/web-player`), static files on its own domain | AWS S3 (private bucket) behind CloudFront (chosen in TODO 4b.0.1), about $0 at MVP traffic |
 | Error alerts | Sentry | Free tier |
 | Payments after the beta | Stripe | No monthly fee, 2.9% + $0.30 per charge |
 
@@ -96,6 +96,14 @@ OpenAI is the only line that grows with usage, and model routing is what keeps i
 - Set an AWS Budgets alert (for example $5/month) so an unexpected spike is visible. The AWS account is shared, so the budget filters on the `project=buildly` tag (Budgets cannot filter by bucket); a new tag takes up to 24 hours to become selectable.
 - Local development and CI use RustFS, an S3-compatible server, in docker-compose (`pnpm services:up`, port 9000; D20), because MinIO no longer publishes pullable images.
 
+### Web player (AWS S3 + CloudFront)
+
+The self-hosted Snack web player (D18, `packages/web-player`) is static files on a domain of its own, because it runs generated code in the user's browser. Chosen in TODO 4b.0.1: a private S3 bucket (`buildly-web-player`, same region, Block Public Access, SSE-S3, tagged `project=buildly` for the budget) read only by a CloudFront distribution through origin access control; HTTPS only, GET and HEAD, no cookies. The distribution's `*.cloudfront.net` name is a registrable domain separate from the app's, so no second domain is needed at the MVP; a custom name can be attached later.
+
+- One-time: `AWS_PROFILE=buildly-admin sh packages/web-player/infra.sh` (admin credentials; the app's IAM users stay limited to their snapshot buckets). It prints `SNACK_WEB_PLAYER_URL`.
+- Each build: `SNACK_ALLOWED_ORIGINS=… pnpm --filter @buildly/web-player build`, then `AWS_PROFILE=buildly-admin sh packages/web-player/deploy.sh`. Content-hashed assets are cached for a year; `index.html` is not cached, and the deploy invalidates `/v2/<sdk>/*`.
+- The allowed origins are baked into the build: `https://app.<domain>` and `https://staging.<domain>` once the domain exists (until then the quick-tunnel origins the S1 spike page uses). Adding an origin is a rebuild and redeploy.
+
 ### Resend
 
 - Verify the sending domain and add its SPF and DKIM records in Cloudflare DNS.
@@ -142,6 +150,7 @@ OpenAI is the only line that grows with usage, and model routing is what keeps i
 | `SESSION_SECRET` | yes | no | |
 | `APP_URL` | yes | yes | Used in magic links and export READMEs |
 | `SNACK_SDK_VERSION` | yes | yes | Pinned from `foundation.json` |
+| `SNACK_WEB_PLAYER_URL` | yes | no | `https://<CloudFront domain>/v2/%%SDK_VERSION%%` from `infra.sh` (§3); empty only on localhost |
 | `SENTRY_DSN` | yes | yes | Separate DSN per service |
 
 ## 5. Alternatives considered

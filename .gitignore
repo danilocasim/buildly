@@ -13,3 +13,6 @@ coverage
 
 # Eval harness output and smoke-test scratch dirs
 .eval/
+
+# Fetched third-party sources (packages/web-player/.cache)
+.cache/

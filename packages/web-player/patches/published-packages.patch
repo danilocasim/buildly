@@ -1,0 +1,17 @@
+diff --git a/runtime/package.json b/runtime/package.json
+index 91eab96..0cc0542 100644
+--- a/runtime/package.json
++++ b/runtime/package.json
+@@ -54,9 +54,9 @@
+     "react-native-view-shot": "~4.0.3",
+     "react-native-web": "^0.21.0",
+     "react-native-worklets": "~0.5.0",
+-    "snack-babel-standalone": "file:../packages/snack-babel-standalone",
+-    "snack-content": "file:../packages/snack-content",
+-    "snack-require-context": "file:../packages/snack-require-context",
++    "snack-babel-standalone": "5.0.0",
++    "snack-content": "3.6.0",
++    "snack-require-context": "0.1.0",
+     "socket.io-client": "~4.5.4",
+     "source-map": "0.6.1"
+   },

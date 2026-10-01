@@ -20,6 +20,9 @@ export function SnackSpike(props: { files: Record<string, string>; sdkVersion: s
   const [logs, setLogs] = useState<Log[]>([]);
   const [depTiming, setDepTiming] = useState<string>();
   const sandbox = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("sandbox");
+  // TODO 4b.0.1: ?player=<base url> points the iframe at Buildly's self-hosted web player
+  // (snack-sdk appends /index.html?...; %%SDK_VERSION%% in the url becomes the SDK major).
+  const player = (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("player")) || undefined;
 
   useEffect(() => {
     const snack = new Snack({
@@ -28,6 +31,9 @@ export function SnackSpike(props: { files: Record<string, string>; sdkVersion: s
       files: Object.fromEntries(Object.entries(props.files).map(([path, contents]) => [path, { type: "CODE" as const, contents }])),
       dependencies: Object.fromEntries(Object.entries(props.dependencies).map(([name, version]) => [name, { version }])),
       webPreviewRef,
+      webPlayerURL: player,
+      // The runtime only logs (incl. "Access to origin … is forbidden") with verbose=true.
+      verbose: Boolean(player),
       online: true,
       codeChangesDelay: 300,
     });
@@ -50,7 +56,7 @@ export function SnackSpike(props: { files: Record<string, string>; sdkVersion: s
       offLog();
       snack.setOnline(false);
     };
-  }, [props.files, props.sdkVersion, props.dependencies]);
+  }, [props.files, props.sdkVersion, props.dependencies, player]);
 
   useEffect(() => {
     if (state?.url) QRCode.toDataURL(state.url, { width: 220 }).then(setQr);
@@ -71,6 +77,7 @@ export function SnackSpike(props: { files: Record<string, string>; sdkVersion: s
     (window as unknown as { __s1: unknown }).__s1 = {
       origin: window.location.origin,
       sandbox,
+      player,
       webPreviewURL: state?.webPreviewURL,
       url: state?.url,
       online: state?.online,
@@ -106,7 +113,7 @@ export function SnackSpike(props: { files: Record<string, string>; sdkVersion: s
   return (
     <main style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: 24 }}>
       <section>
-        <h1 style={{ fontSize: 20 }}>S1 Snack embed · {props.label} · SDK {props.sdkVersion}{sandbox ? " · sandboxed iframe" : ""}</h1>
+        <h1 style={{ fontSize: 20 }}>S1 Snack embed · {props.label} · SDK {props.sdkVersion}{sandbox ? " · sandboxed iframe" : ""}{player ? ` · player ${player}` : ""}</h1>
         <iframe
           title="Web preview"
           ref={(c) => {

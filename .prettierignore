@@ -4,3 +4,4 @@ CLAUDE.md
 pnpm-lock.yaml
 spikes
 packages/foundation/dist
+.cache
