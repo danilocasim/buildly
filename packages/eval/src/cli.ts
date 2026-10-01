@@ -28,22 +28,18 @@ export interface EvalOptions {
   dryRun: boolean;
 }
 
-/** Runs every selected task `runs` times, sequentially, and returns the report. */
+/**
+ * Runs every selected task `runs` times, sequentially, and returns the report. `onRun` gets
+ * each record and the report so far, so a caller can save partial results as it goes.
+ */
 export async function runEval(
   options: EvalOptions,
   portsFor: (task: EvalTask) => EvalPorts,
-  onRun: (record: RunRecord) => void = () => {},
+  onRun: (record: RunRecord, soFar: EvalReport) => void | Promise<void> = () => {},
 ): Promise<EvalReport> {
   const startedAt = new Date().toISOString();
   const runs: RunRecord[] = [];
-  for (const task of selectTasks(options.tasks)) {
-    for (let run = 1; run <= options.runs; run++) {
-      const record = await runTask(task, run, portsFor(task));
-      runs.push(record);
-      onRun(record);
-    }
-  }
-  return {
+  const report = (): EvalReport => ({
     version: 1,
     startedAt,
     finishedAt: new Date().toISOString(),
@@ -54,8 +50,16 @@ export async function runEval(
       runs: options.runs,
       dryRun: options.dryRun,
     },
-    runs,
-  };
+    runs: [...runs],
+  });
+  for (const task of selectTasks(options.tasks)) {
+    for (let run = 1; run <= options.runs; run++) {
+      const record = await runTask(task, run, portsFor(task));
+      runs.push(record);
+      await onRun(record, report());
+    }
+  }
+  return report();
 }
 
 const BUNDLE_TIMEOUT_MS = 60_000;
@@ -131,21 +135,28 @@ export function defaultOutPath(options: EvalOptions, date = new Date()): string 
 export async function main(argv: string[]): Promise<void> {
   const options = parseOptions(argv);
   const out = resolve(options.out ?? defaultOutPath(options));
-  const report = await runEval(options, defaultPorts(options.models, options.dryRun), (r) =>
-    process.stderr.write(
-      `${r.task} #${r.run} ${r.passed ? "passed" : "FAILED"} ${r.status} ${r.wall_seconds}s $${r.cost_usd.toFixed(4)}` +
-        `${
-          r.passed
-            ? ""
-            : ` (${r.checks
-                .filter((c) => !c.ok)
-                .map((c) => c.name)
-                .join("; ")})`
-        }\n`,
-    ),
-  );
   await mkdir(dirname(out), { recursive: true });
-  await writeFile(out, `${JSON.stringify(report, null, 2)}\n`);
+  const save = (report: EvalReport) => writeFile(out, `${JSON.stringify(report, null, 2)}\n`);
+  const report = await runEval(
+    options,
+    defaultPorts(options.models, options.dryRun),
+    async (r, soFar) => {
+      // Saved after every run, so a stopped eval keeps what it finished.
+      await save(soFar);
+      process.stderr.write(
+        `${r.task} #${r.run} ${r.passed ? "passed" : "FAILED"} ${r.status} ${r.wall_seconds}s $${r.cost_usd.toFixed(4)}` +
+          `${
+            r.passed
+              ? ""
+              : ` (${r.checks
+                  .filter((c) => !c.ok)
+                  .map((c) => c.name)
+                  .join("; ")})`
+          }\n`,
+      );
+    },
+  );
+  await save(report);
   process.stdout.write(renderMarkdown(report));
   process.stderr.write(`Report written to ${out}\n`);
 }

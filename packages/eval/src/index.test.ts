@@ -30,11 +30,19 @@ describe("runEval", () => {
       smoke: () => Promise.resolve({ ok: true, passed: 2, failed: 0 }),
     });
     const seen: string[] = [];
-    const report = await runEval({ tasks: "smoke", runs: 1, models, dryRun: true }, ports, (r) =>
-      seen.push(r.task),
+    const partialSizes: number[] = [];
+    const report = await runEval(
+      { tasks: "smoke", runs: 1, models, dryRun: true },
+      ports,
+      (r, soFar) => {
+        seen.push(r.task);
+        partialSizes.push(soFar.runs.length);
+      },
     );
 
     expect(seen).toEqual(["T1", "T4", "T7"]);
+    // Each callback carries the report so far, which the CLI saves after every run.
+    expect(partialSizes).toEqual([1, 2, 3]);
     expect(report.config).toMatchObject({
       tasks: "smoke",
       runs: 1,
