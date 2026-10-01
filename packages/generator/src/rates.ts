@@ -34,3 +34,36 @@ export const RATES = {
 } as const satisfies Record<string, ModelRates>;
 
 export type RatedModel = keyof typeof RATES;
+
+export interface TokenUsage {
+  inputTokens: number;
+  cachedTokens: number;
+  cacheWriteTokens: number;
+  outputTokens: number;
+}
+
+export function isRatedModel(model: string): model is RatedModel {
+  return Object.hasOwn(RATES, model);
+}
+
+/**
+ * USD cost of `usage` on `model`, rounded to 6 decimals. Each input token is billed as
+ * exactly one of uncached input, cached input, or cache write; a model without a
+ * cache-write price bills those tokens as uncached input. Throws for a model with no rate.
+ */
+export function costFor(usage: TokenUsage, model: string): number {
+  if (!isRatedModel(model))
+    throw new Error(`No rate for model "${model}"; add it to RATES in rates.ts`);
+  const rate: ModelRates = RATES[model];
+  if (usage.cachedTokens + usage.cacheWriteTokens > usage.inputTokens) {
+    throw new Error("Cached and cache-write tokens exceed input tokens");
+  }
+  const cacheWritePrice = rate.cacheWrite ?? rate.input;
+  const uncached = usage.inputTokens - usage.cachedTokens - usage.cacheWriteTokens;
+  const microDollars =
+    uncached * rate.input +
+    usage.cachedTokens * rate.cachedInput +
+    usage.cacheWriteTokens * cacheWritePrice +
+    usage.outputTokens * rate.output;
+  return Math.round(microDollars) / 1e6;
+}

@@ -215,12 +215,15 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.1 Provider client
 
-- [ ] 4.1.1 `packages/generator/src/provider.ts`: a `Provider` interface plus an OpenAI implementation on the official `openai` SDK; streaming with strict function tools; optional base URL; retries on 429/5xx with jitter (max 3), honoring rate-limit reset headers; usage capture including cached tokens.
+- [x] 4.1.1 `packages/generator/src/provider.ts`: a `Provider` interface plus an OpenAI implementation on the official `openai` SDK; streaming with strict function tools; optional base URL; retries on 429/5xx with jitter (max 3), honoring rate-limit reset headers; usage capture including cached tokens.
   Verify: unit tests with recorded HTTP fixtures (msw): streams deltas in order; parses two parallel tool calls; retries then succeeds; surfaces a 401 as a non-retryable error.
-- [ ] 4.1.2 `rates.ts` and `costFor(usage, model)` with Standard rates for every configured model.
+  Verified 2026-10-01: `packages/generator/src/provider.test.ts` with msw replaying real streams recorded from gpt-6-luna (`scripts/record-fixtures.ts`): text deltas in recorded order with usage (incl. cached tokens); two parallel `read_file` calls parsed; 429 (`x-ratelimit-reset-requests: 2s`) then 500 then success with waits of 2000 and 500 ms; a recorded 401 → `ProviderError` `auth`, not retried; persistent 503 gives up after 3 retries. Requests use strict tools and `store: false`.
+- [x] 4.1.2 `rates.ts` and `costFor(usage, model)` with Standard rates for every configured model.
   Verify: unit test: known usage → expected USD to 6 decimals for `gpt-6.1-sol`, `gpt-5.3-codex`, and `gpt-6-luna`; unknown model throws.
-- [ ] 4.1.3 Model routing: plans and initial builds use `GENERATION_MODEL_PLAN`; follow-up edits and all repairs use `GENERATION_MODEL_EDIT`; the model used is stored on `generations.model`.
+  Verified 2026-10-01: `src/rates.test.ts`: hand-computed costs to 6 decimals for all three models (cache writes billed at input on `gpt-5.3-codex`, which has no cache-write price); reproduces S3's recorded $0.0964; unknown model throws.
+- [~] 4.1.3 Model routing: plans and initial builds use `GENERATION_MODEL_PLAN`; follow-up edits and all repairs use `GENERATION_MODEL_EDIT`; the model used is stored on `generations.model`.
   Verify: unit test with a fake provider: an initial build calls the plan model; a follow-up edit and its repair call the edit model; `generations.model` matches.
+  Status 2026-10-01: `src/routing.ts` (`modelFor`, `primaryModel`, `modelsFromConfig` rejecting unrated models at startup) with unit tests. The Verify (fake provider through a run, `generations.model`) completes with `runGeneration` in slice 4.4.
 
 ### Slice 4.2 Tool layer
 

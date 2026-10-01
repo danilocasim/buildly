@@ -8,11 +8,18 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "record-fixtures": "tsx scripts/record-fixtures.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "msw": "3.0.1",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@buildly/shared": "workspace:*",
+    "openai": "7.25.0"
   }
 }
