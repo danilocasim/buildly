@@ -109,11 +109,11 @@ export function Workspace({
   const exportCode = useCallback(async () => {
     setExportNote(undefined);
     const response = await fetch(`/api/projects/${projectId}/export`, { method: "POST" });
-    if (response.ok) {
-      const body = (await response.json()) as { url?: string };
-      if (body.url) window.location.assign(body.url);
-    } else
-      setExportNote(response.status === 404 ? "Export is not available yet." : "Export failed.");
+    const body = (await response.json().catch(() => ({}))) as { url?: string; message?: string };
+    if (response.ok && body.url) {
+      setExportNote("Your download is starting.");
+      window.location.assign(body.url);
+    } else setExportNote(body.message ?? "Export failed.");
   }, [projectId]);
 
   // Open on phone (TODO 5.4.1): the modal records the opening and asks the worker to push

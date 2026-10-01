@@ -1,7 +1,7 @@
 import { auth } from "@buildly/db";
 import { z } from "zod";
 import type { Deps } from "../deps";
-import { errorJson, json, readJson, sessionCookie } from "../http";
+import { errorJson, json, readCookie, readJson, SESSION_COOKIE, sessionCookie } from "../http";
 
 const bodySchema = z.object({ email: z.string().trim().pipe(z.email().max(254)) });
 
@@ -50,4 +50,11 @@ export async function consumeMagicLink(request: Request, deps: Deps): Promise<Re
       "set-cookie": sessionCookie(session, auth.SESSION_TTL_MS / 1000),
     },
   });
+}
+
+/** POST /api/auth/sign-out — deletes the session and clears the cookie (TODO 6.4.1). */
+export async function signOut(request: Request, deps: Deps): Promise<Response> {
+  const token = readCookie(request, SESSION_COOKIE);
+  if (token) await auth.deleteSession(deps.db, token);
+  return new Response(null, { status: 204, headers: { "set-cookie": sessionCookie("", 0) } });
 }

@@ -8,6 +8,7 @@ export default defineConfig(
     "**/node_modules/",
     "**/dist/",
     "**/.next/",
+    "**/.next-e2e/",
     "**/.cache/",
     ".plan/",
     "docs/",

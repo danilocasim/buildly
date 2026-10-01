@@ -2,6 +2,7 @@ node_modules
 dist
 .next
 .next-prod
+.next-e2e
 out
 coverage
 *.tsbuildinfo
@@ -10,6 +11,7 @@ coverage
 !.env.example
 .DS_Store
 !packages/foundation/dist/
+!packages/starters/dist/
 
 # Eval harness output and smoke-test scratch dirs
 .eval/

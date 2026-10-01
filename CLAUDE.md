@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Buildly is an AI mobile app builder: a user describes an app or picks a starter, the AI generates a React Native + Expo + TypeScript project, the user previews it in the browser and in Expo Go, refines it in chat, and exports the source.
 
-**The repo is in implementation.** Phases 0–5 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), the web app's auth, project, build, cancel, and restore APIs plus `/admin/invites` (`apps/web`, Next.js 16), and the generation engine: OpenAI provider, tool layer, context builder, and `runGeneration` (`packages/generator`), Snack sessions (`packages/snack`), and the eval harness (`packages/eval`). `packages/web-player` builds Buildly's copy of the Snack web player (Phase 4b, D18). The web workspace (`apps/web/app/app/[id]`, `src/ui/workspace/`) has the chat with streamed progress, the web preview on that player, Open on phone, the code tab, the screen list, and the toolbar with history and restore (Phase 5). `packages/exporter` and the Home, Starters, and Settings pages are Phase 6.
+**The repo is in implementation.** Phases 0–6 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), the web app's auth, project, build, cancel, and restore APIs plus `/admin/invites` (`apps/web`, Next.js 16), and the generation engine: OpenAI provider, tool layer, context builder, and `runGeneration` (`packages/generator`), Snack sessions (`packages/snack`), and the eval harness (`packages/eval`). `packages/web-player` builds Buildly's copy of the Snack web player (Phase 4b, D18). The web workspace (`apps/web/app/app/[id]`, `src/ui/workspace/`) has the chat with streamed progress, the web preview on that player, Open on phone, the code tab, the screen list, and the toolbar with history and restore (Phase 5). Home (composer, recent apps), Starters, Settings, and export ZIPs (`packages/exporter`, secret-guarded) are Phase 6. Phases 7–9 (metrics, security headers, model tuning, acceptance, beta) are next.
 
 | Path | Role |
 | --- | --- |
@@ -84,6 +84,7 @@ pnpm --filter starters exec jest --selectProjects journal # one starter's smoke 
 pnpm --filter foundation digest        # regenerate dist/api-digest.md and dist/foundation-files.json (CI fails if stale)
 pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
+pnpm --filter @buildly/exporter export-starter journal /tmp/journal.zip [free|pro]   # a starter's export ZIP (what 6.3.4's CI job checks)
 pnpm test:snack                        # live Snack integration test (network; skipped by `pnpm test` and CI)
 pnpm eval --tasks smoke --runs 1 --dry-run --model gpt-6-luna   # eval harness, scripted provider, free
 pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all|T1,T4 --runs N   # real API calls (.env OPENAI_API_KEY); writes .eval/*.json
@@ -109,6 +110,7 @@ On this Mac `/opt/homebrew/bin/docker` is an npm documentation generator, not Do
 - Shipped app code is standalone: it may import only allowlisted packages and relative paths, never `@buildly/*`. Anything both sides need (such as `RUNTIME_ERROR_PREFIX`) is duplicated and pinned by a cross-check test.
 - A starter is only project-owned files (`src/navigation.tsx`, `src/screens/**`, `src/data/models.ts`, `src/data/seed.ts`). Helpers go in `models.ts`, since other paths are not writable. Screens take no props and use `useNavigation`/`useRoute` hooks.
 - Jest tests (D19) in these two packages: `jest.resetModules()` gives a fresh store but a second React, so re-require `@testing-library/react-native/pure` after it and use the queries `render` returns; `toBeOnTheScreen` only works with the top-level instance. Bottom tabs are found with `getByLabelText(/^Name, tab/)`. `packages/starters/test/resolver.cjs` overlays a starter on the foundation.
+- After changing a starter's files or `starters.json`, run `pnpm --filter starters dist` and commit `packages/starters/dist/starters-files.json` (the web app imports it; CI diffs it). Thumbnails are copied to `apps/web/public/starters/`.
 - After changing any exported component props, store signature, or shipped file, run `pnpm --filter foundation digest` and commit `dist/` (the digest and `foundation-files.json`, which the web app imports because Turbopack cannot bundle `lib/`'s directory reads).
 
 ## Local services and database
@@ -122,7 +124,7 @@ pnpm db:generate                       # after editing packages/db/src/schema.ts
 pnpm db:seed                           # admin@buildly.test (admin), 3 invites, a project per starter; idempotent
 pnpm db:grant-credits <email> <n> [note]   # top-up build credits (admin grant until Stripe, D21)
 pnpm --filter @buildly/web dev         # http://localhost:3300; loads the repo-root .env (copy .env.example) via --env-file-if-exists
-pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310, fake worker on :3311
+pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310 (built into .next-e2e, so it can run beside `dev`), fake worker on :3311
 SNACK_LIVE=1 pnpm --filter @buildly/web exec playwright test -g @snack   # live preview checks through CloudFront and Snack (network)
 pnpm --filter @buildly/worker start    # the worker loop; loads the repo-root .env the same way (production sets real env vars)
 ```

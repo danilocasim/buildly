@@ -1,20 +1,18 @@
-import {
-  analytics,
-  credits,
-  generations,
-  projects,
-  queue,
-  schema,
-  usage,
-  isRollback,
-} from "@buildly/db";
-import { checkBuild, HOUR_MS, startOfMonthUtc, startOfNextMonthUtc } from "@buildly/shared";
+import { analytics, isRollback, projects } from "@buildly/db";
 import { z } from "zod";
+import { checkBuildFor, startBuild, type StartBuildRefusal } from "../builds";
 import type { Deps } from "../deps";
 import { capDenied, errorJson, json, readJson } from "../http";
 import { requireUser } from "../session";
 
 const bodySchema = z.object({ content: z.string().trim().min(1).max(8000) });
+
+/** The response for a refusal decided inside the build transaction. */
+export function refusalResponse(refusal: StartBuildRefusal): Response {
+  return "capDenied" in refusal
+    ? capDenied(refusal.capDenied)
+    : errorJson(409, refusal.code, refusal.message, { resetAt: null });
+}
 
 /**
  * POST /api/projects/:id/messages — records the user's message and starts a build.
@@ -35,18 +33,7 @@ export async function postMessage(
   const project = await projects.getForUser(deps.db, user.id, projectId);
   if (!project) return errorJson(404, "not_found", "Project not found.");
 
-  const now = deps.now();
-  const hourAgo = new Date(now.getTime() - HOUR_MS);
-  const allowed = checkBuild({
-    plan: user.plan,
-    buildsThisMonth: await usage.countBuildsSince(deps.db, user.id, startOfMonthUtc(now)),
-    buildsLastHour: await usage.countBuildsSince(deps.db, user.id, hourAgo),
-    oldestBuildLastHour: await usage.oldestBuildSince(deps.db, user.id, hourAgo),
-    activeGeneration: await generations.hasActive(deps.db, project.id),
-    activeBuildsForUser: await generations.countActiveForUser(deps.db, user.id),
-    creditBalance: await credits.balance(deps.db, user.id),
-    now,
-  });
+  const allowed = await checkBuildFor(deps, user, project.id);
   if (!allowed.ok) {
     if (allowed.error.code !== "generation_active") {
       await analytics.track(
@@ -66,48 +53,24 @@ export async function postMessage(
       // The base snapshot is read under the project lock, so a concurrent restore either
       // finishes first (and becomes the base) or waits for this build to be recorded.
       const locked = (await projects.lock(tx, project.id))!;
-      const [message] = await tx
-        .insert(schema.messages)
-        .values({ projectId: project.id, role: "user", content: parsed.data.content })
-        .returning();
-      const started = await generations.startExclusive(tx, {
-        projectId: project.id,
+      const started = await startBuild(tx, {
         userId: user.id,
-        kind: locked.currentSnapshotId ? "edit" : "initial",
-        triggerMessageId: message!.id,
+        projectId: project.id,
         baseSnapshotId: locked.currentSnapshotId,
+        content: parsed.data.content,
+        paidBy: allowed.value.paidBy,
+        now: deps.now(),
       });
       if (!started.ok) {
-        refused = errorJson(409, "generation_active", started.error.message, { resetAt: null });
+        refused = refusalResponse(started.refusal);
         tx.rollback();
+        return undefined;
       }
-      const generationId = started.ok ? started.value.id : "";
-      // Past the plan's allowance, this build spends one top-up credit (locked, so two
-      // requests cannot both spend the last one).
-      if (
-        allowed.value.paidBy === "credit" &&
-        !(await credits.consumeForBuild(tx, user.id, generationId))
-      ) {
-        refused = capDenied({
-          code: "monthly_builds",
-          message:
-            "Your last build credit was just used. Add a top-up or wait for the monthly reset.",
-          resetAt: startOfNextMonthUtc(now).toISOString(),
-          status: 429,
-        });
-        tx.rollback();
-      }
-      await usage.record(tx, {
-        userId: user.id,
-        projectId: project.id,
-        type: "build",
-        occurredAt: now,
-      });
-      await queue.enqueue(tx, {
-        type: "generation",
-        payload: { generationId, projectId: project.id },
-      });
-      return { messageId: message!.id, generationId, paidBy: allowed.value.paidBy };
+      return {
+        messageId: started.messageId,
+        generationId: started.generationId,
+        paidBy: allowed.value.paidBy,
+      };
     })
     .catch((error: unknown) => {
       // tx.rollback() throws to abort the transaction; `refused` says why.

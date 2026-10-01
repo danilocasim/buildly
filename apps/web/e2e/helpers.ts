@@ -1,13 +1,16 @@
+import { randomBytes } from "node:crypto";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 import { auth, createDb, createPool, schema } from "@buildly/db";
 import { E2E_BASE_URL, E2E_DATABASE_URL } from "./env";
 
 /** A user of its own: the Free plan allows one concurrent build, and specs run in parallel. */
 export async function newUserSession(email: string): Promise<string> {
+  // Specs pick emails by Date.now(); parallel starts in the same millisecond must not collide.
+  const unique = email.replace(/@/, `-${randomBytes(3).toString("hex")}@`);
   const pool = createPool(E2E_DATABASE_URL, 1);
   try {
     const db = createDb(pool);
-    const [user] = await db.insert(schema.users).values({ email }).returning();
+    const [user] = await db.insert(schema.users).values({ email: unique }).returning();
     return await auth.createSession(db, user!.id, new Date());
   } finally {
     await pool.end();

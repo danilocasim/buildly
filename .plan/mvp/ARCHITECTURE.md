@@ -122,8 +122,8 @@ Route files are thin: each calls a handler in `apps/web/src/server/handlers/` wi
 | --- | --- | --- |
 | `/api/auth/magic-link` | POST | Request link (invite gate) |
 | `/api/auth/callback` | GET | Consume link, create session |
-| `/api/projects` | GET, POST | List, create from prompt or starter |
-| `/api/projects/:id` | GET, PATCH | Load workspace state (project, messages, generations with steps, `lastEventId`), rename |
+| `/api/projects` | GET, POST | List; create from `prompt` (starts the first build in the same transaction), `starterSlug` (initial snapshot from the fixture, no build), or both (the prompt is the first edit) |
+| `/api/projects/:id` | GET, PATCH | Load workspace state (project, messages, generations with steps, `lastEventId`), rename, archive |
 | `/api/projects/:id/messages` | POST | Send chat message, enqueue generation (returns generation id or 429 with reason) |
 | `/api/projects/:id/stream` | GET (SSE) | Stored progress events (SSE id = `project_events.id`, resumable from `Last-Event-ID` or `?after=`) and live assistant deltas |
 | `/api/generations/:id/cancel` | POST | Cancel |

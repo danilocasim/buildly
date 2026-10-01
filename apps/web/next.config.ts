@@ -13,6 +13,9 @@ const playerOrigin = (() => {
 })();
 
 const config: NextConfig = {
+  // The e2e server builds into .next-e2e (NEXT_DIST_DIR), so it can run beside a dev server
+  // (Next allows one dev server per build directory) without touching its output.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   headers: () =>
     Promise.resolve([
       {

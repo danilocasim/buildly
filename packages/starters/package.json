@@ -5,11 +5,13 @@
   "type": "module",
   "description": "Journal, Habit Tracker, and Inventory as project-file sets on the foundation. Each <slug>/src/ holds only project-owned files; lib/ loads them; test/ runs RNTL smoke tests against the real foundation.",
   "exports": {
-    ".": "./lib/index.ts"
+    ".": "./lib/index.ts",
+    "./dist/starters-files.json": "./dist/starters-files.json"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p test && tsc --noEmit -p lib",
-    "test": "jest"
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p test && tsc --noEmit -p lib && tsc --noEmit -p scripts",
+    "test": "jest",
+    "dist": "tsx scripts/build-dist.ts"
   },
   "dependencies": {
     "@buildly/foundation": "workspace:*",
@@ -34,6 +36,7 @@
     "react-native-safe-area-context": "catalog:foundation",
     "react-native-screens": "catalog:foundation",
     "react-test-renderer": "catalog:foundation",
+    "tsx": "catalog:",
     "typescript": "catalog:foundation"
   }
 }

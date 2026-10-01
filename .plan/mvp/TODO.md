@@ -406,37 +406,48 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 6.1 Home
 
-- [ ] 6.1.1 Heading "What mobile app will you build?", composer with placeholder "Describe your mobile app...", starter chip at lower left, "Build app" at lower right.
+- [x] 6.1.1 Heading "What mobile app will you build?", composer with placeholder "Describe your mobile app...", starter chip at lower left, "Build app" at lower right.
   Verify: e2e: empty prompt → button disabled; select starter → enabled with empty prompt; chip removable.
-- [ ] 6.1.2 Submit creates a project and enqueues the first build, then routes to the workspace with the stream already open.
+  Verified 2026-10-01: `app/(shell)/page.tsx` greets by first name over the heading; `src/ui/home/Composer.tsx` has the prompt (placeholder "Describe your mobile app...", ⌘↵ builds), the Choose starter menu that becomes a removable chip at lower left (starters from `packages/starters/dist/starters-files.json`, emitted by `pnpm --filter starters dist` and checked in CI like the foundation's), and Build app at lower right. `e2e/home.spec.ts`: empty prompt → disabled; a starter alone → enabled; removing the chip → disabled.
+- [x] 6.1.2 Submit creates a project and enqueues the first build, then routes to the workspace with the stream already open.
   Verify: e2e with fake provider: first step appears within 2 s of landing.
-- [ ] 6.1.3 Recent apps grid (icon, name, updated time, overflow menu with Rename and Archive); empty-state invitation for new users.
+  Verified 2026-10-01: `POST /api/projects` accepts `prompt` and `starterSlug`: the build caps are checked first, then the project, the message, the generation, the usage event (and credit), and the job are written in one transaction through `src/server/builds.ts` `startBuild`, now shared with the message handler; the name comes from the prompt (`nameFromPrompt`). The composer routes to `/app/<id>`, whose stream opens on mount. `home.test.ts` covers the transaction, the name, and a cap refusal creating nothing. `home.spec.ts`: after Build app the workspace shows the plan step within 2 s of landing (the route is warmed once first, since dev compiles on first visit), then the fake worker finishes the build.
+- [x] 6.1.3 Recent apps grid (icon, name, updated time, overflow menu with Rename and Archive); empty-state invitation for new users.
   Verify: e2e: new user sees the invitation; after creating a project the grid shows it.
-- [ ] 6.1.4 Prompt preserved on any error before navigation.
+  Verified 2026-10-01: `src/ui/home/HomeBrowse.tsx`: Recent apps grid (icon by starter, name, relative updated time) with an overflow menu whose Rename edits inline (PATCH name) and whose Archive calls `PATCH /api/projects/:id` with `archived: true` (sets `archived_at`; archived projects leave every list and are no longer reachable); an invitation card when the user has no apps. `home.spec.ts`: a new user sees "No apps yet"; after a build the card shows; Rename persists after reload; Archive removes it and the invitation returns.
+- [x] 6.1.4 Prompt preserved on any error before navigation.
   Verify: e2e: force a 500 on create → error toast, textarea unchanged.
+  Verified 2026-10-01: the composer shows the API's message (and reset time) inline and keeps the prompt on any non-2xx or network failure; navigation happens only on 201. `home.spec.ts` forces a 500 on the create request with a Playwright route and checks the error text and the unchanged textarea.
 
 ### Slice 6.2 Starters
 
-- [ ] 6.2.1 Starter cards on Home from `starters.json` with thumbnail, description, and Use starter; reserved `/starters` route rendering the same list.
+- [x] 6.2.1 Starter cards on Home from `starters.json` with thumbnail, description, and Use starter; reserved `/starters` route rendering the same list.
   Verify: e2e: three cards render with images; `/starters` responds 200.
-- [ ] 6.2.2 Use starter creates the project from the fixture files with an initial snapshot and no build consumed.
+  Verified 2026-10-01: `src/ui/home/StarterCard.tsx` (thumbnail from `apps/web/public/starters/<slug>.png`, copies of the package's PNGs pinned byte-for-byte by `thumbnails.test.ts`; description; screen chips on the large variant; Use starter) renders on Home's Starters tab and on `/starters` (`app/(shell)/starters/page.tsx`), both from `starters-files.json`. `e2e/starters.spec.ts`: three cards whose images have loaded (`naturalWidth > 0`) on Home and on `/starters`, which answers 200.
+- [x] 6.2.2 Use starter creates the project from the fixture files with an initial snapshot and no build consumed.
   Verify: integration test: `usage_events` count unchanged; snapshot files equal the fixture; workspace preview loads without a generation row.
+  Verified 2026-10-01: Use starter posts `starterSlug` to `POST /api/projects`, which creates the project with the fixture files as its initial snapshot and queues a `preview` job, with no generation, message, or usage event. `home.test.ts`: `usage_events` unchanged, the snapshot's files equal `loadStarterFiles("journal")`, no generation row, the preview job queued; a starter plus a prompt makes the prompt an edit on that base. `starters.spec.ts`: the workspace opens named Journal with no generation thread, the player iframe and "Snapshot …" caption, the screen list (Entries), and `/api/me` still at 0 builds.
 
 ### Slice 6.3 Export
 
-- [ ] 6.3.1 `packages/exporter`: assemble foundation + project files, `package.json` with pinned deps, `app.json` with the project name, README from 2.3.3, attribution flag by plan; produce a ZIP.
+- [x] 6.3.1 `packages/exporter`: assemble foundation + project files, `package.json` with pinned deps, `app.json` with the project name, README from 2.3.3, attribution flag by plan; produce a ZIP.
   Verify: unit test: ZIP entries match the expected set; Free plan README contains "Made with Buildly", Pro does not.
-- [ ] 6.3.2 `POST /api/projects/:id/export` stores the ZIP and returns a signed URL; emits `export.created`.
+  Verified 2026-10-01: `packages/exporter` (`buildExportEntries`, `buildExportZip` on `fflate`, `readExportZip`): the foundation's shipped files, the project files, `app.json` with the project's name, slug, and `showAttribution` by plan, `package.json` with the allowlist pinned from `foundation.json` plus TypeScript and React types (pinned to the foundation catalog by a test), `index.ts` (`registerRootComponent`), the README from `export/README.md` (now carried in `foundation-files.json`), and a `.gitignore`. `src/index.test.ts`: the entry set equals foundation + project + the four generated files; Free README contains "Made with Buildly.", Pro's does not and its `app.json` hides the attribution; the ZIP round-trips.
+- [x] 6.3.2 `POST /api/projects/:id/export` stores the ZIP and returns a signed URL; emits `export.created`.
   Verify: integration test: response URL downloads a ZIP whose size matches `zip_bytes` in the event.
-- [ ] 6.3.3 Secret guard on every export using 0.3.2.
+  Verified 2026-10-01: `POST /api/projects/:id/export` builds the ZIP for the current snapshot, stores it at `exports/{projectId}/{exportId}.zip`, returns a 10-minute signed URL, records an `export` usage event and `export.created` with `zip_bytes`; 409 without a snapshot; 422 when the secret guard blocks. `export.test.ts`: the returned URL downloads a ZIP whose byte length equals `zip_bytes` in the event, and the ZIP holds the README, `app.json`, and the starter's screens. The toolbar's Export code starts the download or shows the API's message.
+- [x] 6.3.3 Secret guard on every export using 0.3.2.
   Verify: CI test unzips a generated export and runs the guard; a fixture containing a key fails the build.
-- [ ] 6.3.4 Exported project runs outside Buildly.
+  Verified 2026-10-01: the guard's rules moved behind `scanFiles` (shared with `scanDirectory`, exported from `@buildly/scripts/check-no-secrets`); the exporter runs it over every entry and throws `ExportBlockedError` naming files and rules but never the match. `index.test.ts`: an unzipped export passes `scanDirectory`; a project file with `sk-abc123` blocks the export. CI's `export-smoke` job also runs `pnpm check:secrets` on the unzipped journal export.
+- [~] 6.3.4 Exported project runs outside Buildly.
   Verify: CI job: unzip, `npm ci`, `npx tsc --noEmit` exit 0; **manual** on a clean machine: `npx expo start` and open in Expo Go following only the README.
+  In progress 2026-10-01: CI job `export-smoke` (`.github/workflows/ci.yml`) exports the journal starter (`pnpm --filter @buildly/exporter export-starter journal <zip>`), unzips it, runs the secret guard, then `npm install` and `npx tsc --noEmit` in the unzipped project (`npm install`, not `npm ci`: exports ship no lockfile, and the README says `npm install`). The job passed on PR #12 (run 36847300736, `export-smoke` 46 s: the journal export installed with npm and type-checked on its own, after the secret guard). Pending: the founder's manual check on a clean machine (`npx expo start`, open in Expo Go following only the README); note date and machine here.
 
 ### Slice 6.4 Settings
 
-- [ ] 6.4.1 Display name, plan, builds used this month against cap, Sign out.
+- [x] 6.4.1 Display name, plan, builds used this month against cap, Sign out.
   Verify: e2e: name change persists; usage matches `usage.countBuildsThisMonth`; sign out clears the cookie and `GET /api/me` → 401.
+  Verified 2026-10-01: `app/(shell)/settings/page.tsx` with `src/ui/settings/SettingsForm.tsx`: display name saved on blur or Enter through `PATCH /api/me` (trimmed, ≤ 60, empty clears; `me.test.ts`), "Signed in as", plan and "N of M builds used this month · resets <date>" with the top-up credit balance and a progress bar, the Pro and top-up panels with their buttons disabled until billing (D11), and Sign out (`POST /api/auth/sign-out` deletes the session and clears the cookie; `me.test.ts` shows `/api/me` answering 401 afterwards). `e2e/settings.spec.ts`: three recorded builds show as "3 of 15", equal to `/api/me`; the name persists after reload and reaches the sidebar; Sign out lands on `/sign-in`, `/api/me` answers 401, and `/settings` redirects.
 
 ---
 
