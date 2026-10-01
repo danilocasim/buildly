@@ -67,8 +67,8 @@ jobs:
         run: pnpm test
 
       # The committed API digest and foundation-files.json must match the foundation source (TODO 2.3.2).
-      - name: Foundation dist is up to date
-        run: pnpm --filter foundation digest && git diff --exit-code packages/foundation/dist
+      - name: Foundation and starters dist are up to date
+        run: pnpm --filter foundation digest && pnpm --filter starters dist && git diff --exit-code packages/foundation/dist packages/starters/dist
 
       # The Drizzle schema has no changes missing from the committed migrations.
       - name: Migrations match the schema
