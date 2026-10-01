@@ -1,11 +1,13 @@
 // Handler test harness: a fresh database and bucket, a recording email sender, a settable
 // clock, and helpers to create users with a session cookie.
 import { auth, schema } from "@buildly/db";
+import { ABUSE_LIMITS } from "@buildly/shared";
 import { createTestDatabase, type TestDatabase } from "@buildly/db/testing";
 import { createTestStorage } from "@buildly/storage/testing";
 import type { Deps } from "./deps";
 import type { EmailMessage } from "./email";
 import { SESSION_COOKIE } from "./http";
+import { createRateLimiter } from "./rate-limit";
 
 export const APP_URL = "http://localhost:3300";
 
@@ -40,6 +42,8 @@ export async function createHarness(): Promise<Harness> {
     },
     appUrl: APP_URL,
     webPlayerURL: "https://player.example.test/v2/%%SDK_VERSION%%",
+    // Each harness counts its own requests, so suites do not share the process-wide limiter.
+    rateLimiter: createRateLimiter(ABUSE_LIMITS.apiRequestsPerSessionPerMinute, 60_000),
     now: () => clock.now,
   };
   return {

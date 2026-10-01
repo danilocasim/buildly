@@ -467,14 +467,18 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 7.2 Security and abuse
 
-- [ ] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
+- [~] 7.2.1 Client bundle secret scan in CI on `apps/web/.next` using 0.3.2.
   Verify: CI step passes; injecting `process.env.OPENAI_API_KEY` into a client component fails the build.
-- [ ] 7.2.2 Security headers: CSP with the web player origin as the only `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
+  2026-10-01: CI step "Client bundle secret scan" runs `next build` and `pnpm check:secrets apps/web/.next/static`; locally the production client bundle scans clean. Open: the injection check (add a reference to the key's env name in a client component, build, expect the scan to fail, revert) was not run here and needs a manual run.
+- [x] 7.2.2 Security headers: CSP with the web player origin as the only `frame-src`, `frame-ancestors 'none'`, HSTS, cookie `SameSite=Lax` `Secure` `HttpOnly`.
   Verify: integration test asserts headers on `/` and the workspace route.
-- [ ] 7.2.3 Rate limit on magic-link requests (5 per email per hour) and on API routes by session.
+  Verified 2026-10-01: `securityHeaders` (`apps/web/src/server/security-headers.ts`, unit-tested) is applied to every route by `next.config.ts`; `e2e/security-headers.spec.ts` asserts the CSP's player-only `frame-src`, `frame-ancestors 'none'`, HSTS, `X-Frame-Options`, and `nosniff` on `/` and `/app/:id` from the running server; the cookie flags stay asserted in `auth.test.ts`; `preview.spec.ts` still sees other frames blocked. Script, style, and connect sources are not restricted yet (ARCHITECTURE.md §8).
+- [x] 7.2.3 Rate limit on magic-link requests (5 per email per hour) and on API routes by session.
   Verify: integration test: 6th request → 429.
-- [ ] 7.2.4 One Free account per email and email verification by construction of magic links; duplicate `users.email` rejected.
+  Verified 2026-10-01: `auth.test.ts`: five links in an hour → 200, the 6th (case and spacing variant of the same email) → 429 with no email sent, one slot frees an hour after the first. `rate-limit.test.ts`: request 121 in a minute on one session → 429 with `Retry-After`, another session is unaffected, the next minute is allowed. Limits in `ABUSE_LIMITS`.
+- [x] 7.2.4 One Free account per email and email verification by construction of magic links; duplicate `users.email` rejected.
   Verify: unique index test.
+  Verified 2026-10-01: `queries.test.ts`: a second insert of the same email fails with 23505 on `users_email_unique`; sign-in normalizes the email, so case and spacing variants reach the same account.
 
 ### Slice 7.3 Model selection and tuning
 

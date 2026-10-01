@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startOfMonthUtc } from "@buildly/shared";
+import { findOrCreateUser, normalizeEmail } from "./auth";
 import { isRollback } from "./client";
 import { generations, projects, snapshots, usage } from "./queries";
 import { projects as projectsTable, users } from "./schema";
@@ -152,5 +153,25 @@ describe("transactions", () => {
     release();
     await Promise.all([holder, waiter]);
     expect(order).toEqual(["released", "waiter"]);
+  });
+});
+
+describe("one account per email (7.2.4)", () => {
+  it("rejects a duplicate users.email with a unique violation", async () => {
+    await user("dup@example.com");
+    const error = await t.db
+      .insert(users)
+      .values({ email: "dup@example.com" })
+      .then(() => null)
+      .catch((e: unknown) => e as { cause?: { code?: string; constraint?: string } });
+    expect(error?.cause?.code).toBe("23505");
+    expect(error?.cause?.constraint).toBe("users_email_unique");
+  });
+
+  it("sign-in normalizes the email, so case and spacing variants reach the same account", async () => {
+    const now = new Date();
+    const first = await findOrCreateUser(t.db, normalizeEmail(" Case@Example.com"), now);
+    const second = await findOrCreateUser(t.db, normalizeEmail("case@example.COM "), now);
+    expect(second.id).toBe(first.id);
   });
 });

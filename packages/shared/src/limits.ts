@@ -45,6 +45,14 @@ export function startOfNextMonthUtc(now: Date): Date {
 
 export const HOUR_MS = 60 * 60 * 1000;
 
+/** Abuse controls outside the plan caps (TODO 7.2.3). */
+export const ABUSE_LIMITS = {
+  /** Magic links one email may request in a rolling hour. */
+  magicLinksPerEmailPerHour: 5,
+  /** API requests one session may make in a fixed one-minute window. */
+  apiRequestsPerSessionPerMinute: 120,
+} as const;
+
 export interface BuildUsage {
   plan: Plan;
   /** Builds consumed since startOfMonthUtc(now), whether the plan or a credit paid. */

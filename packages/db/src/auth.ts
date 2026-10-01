@@ -38,6 +38,7 @@ export async function createMagicLink(db: Executor, email: string, now: Date): P
   const token = newToken();
   await db.insert(magicLinks).values({
     email,
+    createdAt: now,
     tokenHash: hashToken(token),
     expiresAt: new Date(now.getTime() + MAGIC_LINK_TTL_MS),
   });
