@@ -83,6 +83,8 @@ export function appJsonFor(
 export interface SnackManagerOptions {
   manifest: FoundationManifest;
   foundationFiles: FileSet;
+  /** Buildly's self-hosted web player (D18), e.g. https://<host>/v2/%%SDK_VERSION%%. */
+  webPlayerURL?: string;
   createSnack?: SnackFactory;
 }
 
@@ -116,6 +118,7 @@ export function createSnackManager(options: SnackManagerOptions) {
         channel,
         online: true,
         dependencies,
+        webPlayerURL: options.webPlayerURL,
       });
       const session: SnackSession = { projectId: project.id, channel, snack, runtimeErrors: [] };
       snack.addLogListener((log) => {
@@ -197,6 +200,7 @@ export function createSnackManager(options: SnackManagerOptions) {
         name: project.name,
         online: false,
         dependencies,
+        webPlayerURL: options.webPlayerURL,
         files: filesFor(project, projectFiles),
       });
       return this.awaitBundle(

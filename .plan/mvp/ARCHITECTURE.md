@@ -111,6 +111,7 @@ Prompt caching: keep 1 to 3 byte-identical across turns in a run so cache hits a
 - Each project's `app.json` gets a unique `expo.slug` (derived from the project id). Expo Go shares one AsyncStorage between every Snack on a phone, and the store scopes all keys by that slug, so two previews never read each other's data or `schemaVersion`.
 - The web app receives `webPreviewURL` and the online `url` over the project API; the iframe is rendered only with the SDK's web preview reference wiring.
 - Web preview uses Buildly's self-hosted build of the Snack web player (`webPlayerURL`, D18) because Snack's hosted player only talks to Expo's allowlisted origins. It lives on its own registrable domain, since it runs generated code in the user's browser. Expo Go uses Snack directly.
+- The player is `packages/web-player`: expo/snack's `runtime` (web target) at the last commit on the foundation's SDK, with one patch that reads the allowed origins from `EXPO_PUBLIC_SNACK_ALLOWED_ORIGINS` at build time (exact origins or `https://*.host`; `http://localhost:*` always) and one that uses the published `snack-*` packages instead of the monorepo's `file:` links. `build.sh` writes `dist/v2/<sdk major>/`, the path `snack-sdk` requests (`<webPlayerURL>/index.html?initialUrl=…&origin=<page origin>`), and `deploy.sh` uploads it to the player bucket behind CloudFront (HOSTING.md). A new SDK or a new origin is a rebuild and redeploy; its README has the steps.
 - Snack sessions never receive secrets. Files sent are exactly the foundation plus project files.
 
 ## 7. API surface (apps/web)
@@ -153,6 +154,7 @@ EMAIL_PROVIDER_API_KEY, EMAIL_FROM
 SESSION_SECRET
 APP_URL
 SNACK_SDK_VERSION
+SNACK_WEB_PLAYER_URL        web, optional: Buildly's self-hosted Snack web player, https://<player host>/v2/%%SDK_VERSION%% (D18); empty falls back to Expo's hosted player, which only works from localhost
 SENTRY_DSN                  optional: empty disables Sentry (local development)
 ```
 

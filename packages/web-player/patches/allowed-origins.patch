@@ -1,0 +1,57 @@
+diff --git a/runtime/src/transports/RuntimeTransportImplWebPlayer.ts b/runtime/src/transports/RuntimeTransportImplWebPlayer.ts
+index ffc2679..228be77 100644
+--- a/runtime/src/transports/RuntimeTransportImplWebPlayer.ts
++++ b/runtime/src/transports/RuntimeTransportImplWebPlayer.ts
+@@ -20,31 +20,29 @@ import * as Logger from '../Logger';
+  * [badsite.com] -> [https://s3.webplayer?origin=badsite.com] (disallowed)
+  * [badsite.com] -> [https://s3.webplayer?origin=snack.expo.io] (allowed, but fails on postMessage & recv message check)
+  */
+-const allowedOrigins = [
+-  'https://snack.expo.io',
+-  'https://staging.snack.expo.io',
+-  'https://snack.expo.dev',
+-  'https://staging-snack.expo.dev',
+-  'http://snack.expo.test',
+-  'https://snack.expo.test',
+-  // Draftbit
+-  'https://build.draftbit.com',
+-  'https://build.stagingbit.com',
+-  // Codecademy
+-  'https://codecademy.com',
+-  'https://www.codecademy.com',
+-  'https://jackdaw.codecademy.com',
+-  'https://staging.codecademy.com',
+-  'https://production.codecademy.com',
+-  'https://enterprise.codecademy.com',
+-  'https://codecademy-enterprise.percipio.com',
+-  // Sizze
+-  'https://dashboard.sizze.io',
+-  'https://app.sizze.io',
+-];
++/**
++ * Buildly: the origins allowed to drive this player come from the build environment
++ * (EXPO_PUBLIC_SNACK_ALLOWED_ORIGINS, comma-separated, inlined by Metro). An entry is an
++ * exact origin, or `https://*.example.com` for any subdomain of it (never the apex).
++ */
++const allowedOrigins = (process.env.EXPO_PUBLIC_SNACK_ALLOWED_ORIGINS ?? '')
++  .split(',')
++  .map((entry) => entry.trim())
++  .filter(Boolean);
++
++function matchesOrigin(origin: string, pattern: string): boolean {
++  if (!pattern.includes('*')) return origin === pattern;
++  const escaped = pattern
++    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
++    .replace(/\*/g, '[a-z0-9-]+(?:\\.[a-z0-9-]+)*');
++  return new RegExp(`^${escaped}$`, 'i').test(origin);
++}
+ 
+ function isAllowedOrigin(origin: string): boolean {
+-  return allowedOrigins.includes(origin) || origin.startsWith('http://localhost:');
++  return (
++    allowedOrigins.some((pattern) => matchesOrigin(origin, pattern)) ||
++    origin.startsWith('http://localhost:')
++  );
+ }
+ 
+ type Listener = (payload: { message: any }) => void;

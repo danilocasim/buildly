@@ -305,8 +305,9 @@ Goal: a web preview Buildly controls, because Snack's hosted web player refuses 
 
 ### Slice 4b.0 Self-hosted Snack web player (chosen, D18)
 
-- [ ] 4b.0.1 Build the open-source Snack web player (expo/snack `runtime`, web target) for the pinned SDK with Buildly's preview origins added to `allowedOrigins`; host it on its own registrable domain (never the app's), no cookies; pass it as `webPlayerURL`. Document the per-SDK rebuild.
+- [~] 4b.0.1 Build the open-source Snack web player (expo/snack `runtime`, web target) for the pinned SDK with Buildly's preview origins added to `allowedOrigins`; host it on its own registrable domain (never the app's), no cookies; pass it as `webPlayerURL`. Document the per-SDK rebuild.
   Verify: the S1 spike page on the staging domain renders the journal starter through the self-hosted player; a page on another origin gets no messages.
+  Status 2026-10-01: built and verified locally; the deploy to AWS waits for admin credentials. `packages/web-player`: expo/snack `runtime` at `a694b8f` (its last SDK 54 commit; `main` is on SDK 56) with two patches, one reading the allowed origins from `EXPO_PUBLIC_SNACK_ALLOWED_ORIGINS` (exact or `https://*.host`), one using the published `snack-*` packages instead of the monorepo's `file:` links; `build.sh` → `dist/v2/54/` (12 MB, one bundle). `scripts/verify.ts` drives the S1 spike page (`?starter=journal&player=…`) in headless Chromium: from `http://localhost:3200` the web client connected through the local copy of the player (status ok, journal files loaded); from `http://127.0.0.1:3200` the player logged `Access to origin … is forbidden` and no client connected. Hosting chosen: AWS S3 + CloudFront (`infra.sh`, `deploy.sh`; HOSTING.md §3). Pending for `[x]`: run `infra.sh`, deploy, and rerun `verify.ts` with the spike page on its quick-tunnel origin (the staging domain does not exist yet) against the CloudFront URL.
 
 ### Slice 4b.1 Runner container image (fallback)
 

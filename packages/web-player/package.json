@@ -1,0 +1,19 @@
+{
+  "name": "@buildly/web-player",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Buildly's build of the Snack web player (D18): expo/snack runtime, web target, with Buildly's origins allowed. build.sh fetches the pinned commit, applies patches/, exports with Expo, and writes dist/v2/<sdk>/.",
+  "scripts": {
+    "build": "sh build.sh",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

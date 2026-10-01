@@ -204,4 +204,22 @@ describe("Snack session manager", () => {
       expoGoUrl: "exp://u.expo.dev/abc?snack-channel=chan-9",
     });
   });
+
+  it("passes the self-hosted web player URL to every session (4b.0.1)", async () => {
+    const created: FakeSnack[] = [];
+    const webPlayerURL = "https://player.example.com/v2/%%SDK_VERSION%%";
+    const manager = createSnackManager({
+      manifest,
+      foundationFiles,
+      webPlayerURL,
+      createSnack: (o) => {
+        const snack = new FakeSnack(o);
+        created.push(snack);
+        return snack;
+      },
+    });
+    manager.ensureSession({ id: "p1", name: "App" });
+    await manager.checkBundle({ id: "p1", name: "App" }, {}, 1000);
+    expect(created.map((s) => s.options.webPlayerURL)).toEqual([webPlayerURL, webPlayerURL]);
+  });
 });

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Buildly is an AI mobile app builder: a user describes an app or picks a starter, the AI generates a React Native + Expo + TypeScript project, the user previews it in the browser and in Expo Go, refines it in chat, and exports the source.
 
-**The repo is in implementation.** Phases 0–4 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), the web app's auth, project, build, cancel, and restore APIs plus `/admin/invites` (`apps/web`, Next.js 16), and the generation engine: OpenAI provider, tool layer, context builder, and `runGeneration` (`packages/generator`), Snack sessions (`packages/snack`), and the eval harness (`packages/eval`). `packages/exporter` is a placeholder until Phase 6; the web UI is Phase 5–6.
+**The repo is in implementation.** Phases 0–4 are built (see TODO.md for the few open checks): workspace and CI, spikes (`spikes/`, results in SPIKES.md), the Expo foundation and starters, the type checker, and the platform: Postgres schema and queries (`packages/db`), object storage (`packages/storage`), the job queue and worker loop (`apps/worker`), the web app's auth, project, build, cancel, and restore APIs plus `/admin/invites` (`apps/web`, Next.js 16), and the generation engine: OpenAI provider, tool layer, context builder, and `runGeneration` (`packages/generator`), Snack sessions (`packages/snack`), and the eval harness (`packages/eval`). `packages/web-player` builds Buildly's copy of the Snack web player (Phase 4b, D18). `packages/exporter` is a placeholder until Phase 6; the web UI is Phase 5–6.
 
 | Path | Role |
 | --- | --- |
@@ -89,6 +89,8 @@ pnpm eval --tasks smoke --runs 1 --dry-run --model gpt-6-luna   # eval harness, 
 pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all|T1,T4 --runs N   # real API calls (.env OPENAI_API_KEY); writes .eval/*.json
 pnpm eval:report <file.json>            # markdown table with the EVAL.md thresholds
 docker build -f apps/worker/Dockerfile -t buildly-worker .   # worker image with pre-baked foundation deps
+SNACK_ALLOWED_ORIGINS=... pnpm --filter @buildly/web-player build   # Snack web player for the foundation's SDK (Node 22, network); dist/v2/<sdk>/
+AWS_PROFILE=buildly-admin sh packages/web-player/infra.sh | deploy.sh   # one-time S3 + CloudFront setup; upload a build
 ```
 
 On this Mac `/opt/homebrew/bin/docker` is an npm documentation generator, not Docker, and it writes a `doc/` folder into the current directory. Use `/Applications/Docker.app/Contents/Resources/bin/docker`.
@@ -97,6 +99,7 @@ On this Mac `/opt/homebrew/bin/docker` is an npm documentation generator, not Do
 - TypeScript stays on 6.0.x: typescript-eslint does not support 7 yet.
 - Server env is read only through `loadConfig('web' | 'worker')` from `@buildly/shared/config`, never the `@buildly/shared` root, so env names stay out of client bundles.
 - Nested standalone projects (`.plan/mvp/mockup/`, each `spikes/<name>/`) carry their own `pnpm-workspace.yaml` and lockfile. Without it, `pnpm install` inside them resolves up to the repo workspace and installs that instead. Add dependencies there with `pnpm add -w`. `spikes/` is excluded from ESLint and Prettier.
+- `packages/web-player/.cache/` holds the fetched expo/snack checkout (gitignored, lint-ignored). The player's allowed origins are baked in at build time; `scripts/verify.ts` checks a deployed or local player from an allowed and a forbidden origin through the S1 spike page (`spikes/snack-embed`, `pnpm dev` on 3200).
 - `.env.example` and `.plan/mvp/METRICS.md` are test fixtures: the shared tests fail if the env schema or the event list drifts from them.
 
 ### Foundation and starters
