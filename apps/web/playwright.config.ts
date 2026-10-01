@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_BASE_URL, E2E_DATABASE_URL, E2E_PORT } from "./e2e/env";
+import { E2E_BASE_URL, E2E_DATABASE_URL, E2E_PORT, E2E_SERVER_LOG } from "./e2e/env";
 
 // E2E runs the real Next.js server against the buildly_e2e database on the
 // docker-compose Postgres (`pnpm services:up`).
@@ -12,7 +12,8 @@ export default defineConfig({
   use: { baseURL: E2E_BASE_URL, trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `pnpm exec next dev --port ${E2E_PORT}`,
+    // Output is teed to a log the sign-in test reads magic links from (console email adapter).
+    command: `pnpm exec next dev --port ${E2E_PORT} 2>&1 | tee ${JSON.stringify(E2E_SERVER_LOG)}`,
     url: `${E2E_BASE_URL}/api/me`,
     reuseExistingServer: false,
     timeout: 120_000,

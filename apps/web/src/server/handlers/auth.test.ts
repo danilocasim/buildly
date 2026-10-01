@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { schema } from "@buildly/db";
-import { createHarness, type Harness } from "../testing";
+import { APP_URL, createHarness, type Harness } from "../testing";
 import { consumeMagicLink, requestMagicLink } from "./auth";
 import { getMe } from "./me";
 
@@ -57,6 +57,13 @@ describe("POST /api/auth/magic-link", () => {
   });
 });
 
+/** An invalid, used, or expired link: no session, redirect to the sign-in page's error state. */
+function expectInvalidLink(response: Response) {
+  expect(response.status).toBe(302);
+  expect(response.headers.get("location")).toBe(`${APP_URL}/sign-in?error=invalid_link`);
+  expect(response.headers.get("set-cookie")).toBeNull();
+}
+
 describe("GET /api/auth/callback", () => {
   async function linkFor(email: string) {
     await h.t.db.insert(schema.invites).values({ email }).onConflictDoNothing();
@@ -93,39 +100,37 @@ describe("GET /api/auth/callback", () => {
     expect(await me.json()).toMatchObject({ email: "new@example.com" });
   });
 
-  it("the same token a second time → 400", async () => {
+  it("the same token a second time → redirect to the sign-in error state", async () => {
     const token = await linkFor("twice@example.com");
     expect(
       (await consumeMagicLink(h.request("GET", `/api/auth/callback?token=${token}`), h.deps))
         .status,
     ).toBe(302);
-    expect(
-      (await consumeMagicLink(h.request("GET", `/api/auth/callback?token=${token}`), h.deps))
-        .status,
-    ).toBe(400);
+    const again = await consumeMagicLink(
+      h.request("GET", `/api/auth/callback?token=${token}`),
+      h.deps,
+    );
+    expectInvalidLink(again);
   });
 
-  it("an expired token (after 15 minutes) → 400", async () => {
+  it("an expired token (after 15 minutes) → redirect to the sign-in error state", async () => {
     const token = await linkFor("late@example.com");
     const issued = h.clock.now;
     h.clock.now = new Date(issued.getTime() + 15 * 60_000 + 1);
     try {
-      expect(
-        (await consumeMagicLink(h.request("GET", `/api/auth/callback?token=${token}`), h.deps))
-          .status,
-      ).toBe(400);
+      expectInvalidLink(
+        await consumeMagicLink(h.request("GET", `/api/auth/callback?token=${token}`), h.deps),
+      );
     } finally {
       h.clock.now = issued;
     }
   });
 
-  it("an unknown or missing token → 400", async () => {
-    expect(
-      (await consumeMagicLink(h.request("GET", "/api/auth/callback?token=nope"), h.deps)).status,
-    ).toBe(400);
-    expect((await consumeMagicLink(h.request("GET", "/api/auth/callback"), h.deps)).status).toBe(
-      400,
+  it("an unknown or missing token → redirect to the sign-in error state", async () => {
+    expectInvalidLink(
+      await consumeMagicLink(h.request("GET", "/api/auth/callback?token=nope"), h.deps),
     );
+    expectInvalidLink(await consumeMagicLink(h.request("GET", "/api/auth/callback"), h.deps));
   });
 
   it("an existing user can sign in without an invite", async () => {

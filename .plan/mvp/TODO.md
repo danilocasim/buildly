@@ -160,7 +160,7 @@ Goal: the boring parts the generator and UI sit on.
   Verified 2026-10-01: `apps/web/src/server/handlers/auth.test.ts`: not invited → 403 `not_invited`; invited → 200 and a `magic_links` row with `used_at` null and only the token hash stored.
 - [x] 3.2.2 `GET /api/auth/callback`: consumes token once, creates `users` row on first login, sets httpOnly secure cookie session.
   Verify: integration test: valid token → 302 to Home with cookie; same token again → 400; expired → 400.
-  Verified 2026-10-01: valid token → 302 to `/` with `HttpOnly; Secure; SameSite=Lax` cookie, user created, invite accepted; reuse → 400; after 15 minutes → 400.
+  Verified 2026-10-01: valid token → 302 to `/` with `HttpOnly; Secure; SameSite=Lax` cookie, user created, invite accepted; reuse → 400; after 15 minutes → 400. Changed in 5.1.2 (2026-10-01): an invalid, used, or expired link now answers 302 to `/sign-in?error=invalid_link` (no cookie) so the sign-in page shows the error state; the tests assert that instead of 400.
 - [x] 3.2.3 Session middleware and `GET /api/me`.
   Verify: integration test: no cookie → 401; valid cookie → user JSON without email of other users.
   Verified 2026-10-01: no cookie or a forged one → 401; a valid cookie → own profile and usage only; an expired session → 401. The "middleware" is `requireUser()` in `src/server/session.ts`.
@@ -336,10 +336,12 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.1 App shell and design system
 
-- [ ] 5.1.1 Next.js app with the brief §3 tokens as CSS variables, base typography, and a sidebar layout (Home, Starters, Settings) that collapses to a drawer under 1024 px.
+- [x] 5.1.1 Next.js app with the brief §3 tokens as CSS variables, base typography, and a sidebar layout (Home, Starters, Settings) that collapses to a drawer under 1024 px.
   Verify: Playwright: at 1280 px the sidebar is visible; at 768 px it is hidden and the drawer opens from the menu button; axe scan reports no serious violations.
-- [ ] 5.1.2 Auth pages: enter email, "check your inbox", error states; redirect to Home after callback.
+  Verified 2026-10-01: `apps/web` now uses Tailwind v4 with the mockup's tokens as `@theme` variables (`app/globals.css`), Inter via `next/font`, and an `app/(shell)` route group whose layout redirects signed-out visitors to `/sign-in` and renders `Shell` (viewport-locked; only the page scrolls) with `Sidebar` (Home, Starters, Settings, a plan card with real builds used, credits, and reset date). Under 1024 px a top bar's menu button opens the sidebar as a drawer (`role=dialog`), closed by navigation, Escape, or the overlay. `apps/web/e2e/shell.spec.ts`: at 1280 px the sidebar is visible with the three links and `0/15 builds`, and Settings gets `aria-current`; at 768 px it is hidden, the menu button opens the drawer, a link closes it, Escape closes it; `@axe-core/playwright` reports no serious or critical violations at 1280 px, in the open drawer at 768 px, and on `/sign-in`. Starters and Settings are placeholder pages until 6.2 and 6.4.
+- [x] 5.1.2 Auth pages: enter email, "check your inbox", error states; redirect to Home after callback.
   Verify: e2e with the console email adapter: full sign-in flow lands on Home.
+  Verified 2026-10-01: `/sign-in` (`src/ui/SignInForm.tsx`): email form → `POST /api/auth/magic-link` → "Check your inbox" with the address; error states for an invalid email, a non-invited email ("Buildly is invite-only right now.", form kept), a network failure, and `?error=invalid_link`, which the callback now redirects to instead of a bare 400 (3.2.2 note). `apps/web/e2e/sign-in.spec.ts` with the console email adapter: the Playwright web server's output is teed to `e2e/.server.log`, the test invites a fresh address, submits the form, reads the printed magic link from the log, opens it, and lands on Home with the sidebar showing that email; opening the link again lands on the error state; a bogus token does too. 12 e2e tests pass.
 
 ### Slice 5.2 Chat panel
 

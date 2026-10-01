@@ -11,3 +11,5 @@ export const E2E_DATABASE_URL = (() => {
   return url.toString();
 })();
 export const E2E_STATE = fileURLToPath(new URL(".state.json", import.meta.url));
+/** The dev server's output; the console email adapter prints magic links here. */
+export const E2E_SERVER_LOG = fileURLToPath(new URL(".server.log", import.meta.url));

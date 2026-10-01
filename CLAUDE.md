@@ -128,7 +128,8 @@ pnpm --filter @buildly/worker start    # the worker loop
 
 - The db scripts and tests never read `.env`: they default to the docker services, so a `DATABASE_URL` pointing at another Postgres cannot be migrated by accident.
 - Each db integration test file gets its own database (`createTestDatabase` from `@buildly/db/testing`) and each storage test its own bucket (`@buildly/storage/testing`).
+- `apps/web` UI: Tailwind v4 with the design tokens in `app/globals.css` (`bg-bg`, `text-muted`, `border-line`, `bg-accent`, `text-accent-text`, `rounded-card`, …; use these, not raw colors); signed-in pages live in `app/(shell)` (sidebar plus drawer under 1024 px, `src/ui/Shell.tsx`), `/sign-in` and `/admin` outside it. Next's route announcer is also `role="alert"`, so e2e tests target alerts by test id.
 - Handlers in `apps/web/src/server/handlers/` take `Deps`; test them with `createHarness()` (fresh database and bucket, recorded emails, settable clock, `signIn()` for a session cookie; `afterAll(() => h.cleanup())`).
 - `tx.rollback()` throws an error named `DrizzleError`; detect it with `isRollback(error)` from `@buildly/db`, not by name.
-- In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log.
+- In dev, set `EMAIL_PROVIDER_API_KEY=console` and magic links print to the web server log. The e2e web server's output is teed to `apps/web/e2e/.server.log`, which `sign-in.spec.ts` reads the link from.
 - Usage is governed only by plans and top-up build credits (D10, D21); there is no bring-your-own-key. All cap rules live in `packages/shared/src/limits.ts` (`checkBuild` returns who pays: `plan` or `credit`).
