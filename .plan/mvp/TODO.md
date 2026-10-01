@@ -445,8 +445,9 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 6.4 Settings
 
-- [ ] 6.4.1 Display name, plan, builds used this month against cap, Sign out.
+- [x] 6.4.1 Display name, plan, builds used this month against cap, Sign out.
   Verify: e2e: name change persists; usage matches `usage.countBuildsThisMonth`; sign out clears the cookie and `GET /api/me` → 401.
+  Verified 2026-10-01: `app/(shell)/settings/page.tsx` with `src/ui/settings/SettingsForm.tsx`: display name saved on blur or Enter through `PATCH /api/me` (trimmed, ≤ 60, empty clears; `me.test.ts`), "Signed in as", plan and "N of M builds used this month · resets <date>" with the top-up credit balance and a progress bar, the Pro and top-up panels with their buttons disabled until billing (D11), and Sign out (`POST /api/auth/sign-out` deletes the session and clears the cookie; `me.test.ts` shows `/api/me` answering 401 afterwards). `e2e/settings.spec.ts`: three recorded builds show as "3 of 15", equal to `/api/me`; the name persists after reload and reaches the sidebar; Sign out lands on `/sign-in`, `/api/me` answers 401, and `/settings` redirects.
 
 ---
 
