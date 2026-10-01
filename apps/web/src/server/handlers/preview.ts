@@ -10,7 +10,7 @@ import { analytics, projects, schema, snapshots } from "@buildly/db";
 // `new URL("..", import.meta.url)`), so it uses the committed JSON the digest script emits.
 import foundation from "@buildly/foundation/dist/foundation-files.json";
 import { EVENTS, foundationManifestSchema } from "@buildly/shared";
-import { assembleSnackFiles, snackDependencies } from "@buildly/snack";
+import { assembleSnackFiles, expoGoUrlFor, snackDependencies } from "@buildly/snack";
 import { z } from "zod";
 import type { Deps } from "../deps";
 import { errorJson, json, readJson } from "../http";
@@ -51,6 +51,9 @@ export async function getPreview(
     sdkVersion: manifest.sdkVersion,
     webPlayerURL: deps.webPlayerURL ?? null,
     channel: project.snackSessionId,
+    expoGoUrl: project.snackSessionId
+      ? expoGoUrlFor(project.snackSessionId, manifest.sdkVersion)
+      : null,
     buildStatus: latest?.status ?? null,
   });
 }

@@ -372,10 +372,12 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 5.4 Open on phone
 
-- [ ] 5.4.1 Modal with QR of the Expo Go `url`, Expo Go install links, and the one-line note about internet access; emits `preview.phone_opened`.
+- [x] 5.4.1 Modal with QR of the Expo Go `url`, Expo Go install links, and the one-line note about internet access; emits `preview.phone_opened`.
   Verify: unit test decodes the rendered QR (jsQR) to the session URL; e2e: opening the modal writes the analytics row.
-- [ ] 5.4.2 Starter opens in Expo Go from the workspace QR.
+  Verified 2026-10-01: `src/ui/workspace/OpenOnPhoneModal.tsx`: QR (SVG from `qrcode` modules, `src/ui/workspace/qr.ts`) of the session's Expo Go URL, the App Store and Play links, the internet-access note, Escape and overlay to close. The URL comes from `expoGoUrlFor(channel, sdkVersion)` in `packages/snack` (snack-content's `createRuntimeUrl` with the stored channel; a test checks it equals a real `Snack` instance's `url`). Opening calls `POST /api/projects/:id/phone`, which records `preview.phone_opened` and enqueues a `preview` job so the worker's session exists (recreated from the stored channel after a worker restart) before Expo Go connects; the modal polls until the channel exists. `qr.test.ts`: jsQR decodes the rendered modules back to the URL. `e2e/phone.spec.ts`: before a build the modal explains and queues nothing; opening writes the analytics row and flips the phone chip to "QR opened"; after a build the QR and a URL with the session's channel show and a `preview` job was queued.
+- [~] 5.4.2 Starter opens in Expo Go from the workspace QR.
   Verify: **manual** on iOS and Android; note date and devices here.
+  Pending the founder's device test (see the steps in the 5.4 hand-off): `pnpm services:up`, `pnpm db:migrate`, `pnpm db:seed`, run the web app and the worker, sign in as admin@buildly.test, open a seeded starter project's workspace, Open on phone, scan with Expo Go on iOS and Android; note date and devices here.
 
 ### Slice 5.5 Code tab
 

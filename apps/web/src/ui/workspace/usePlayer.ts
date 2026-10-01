@@ -14,6 +14,7 @@ export interface PreviewData {
   sdkVersion: string;
   webPlayerURL: string | null;
   channel: string | null;
+  expoGoUrl: string | null;
   buildStatus: string | null;
 }
 

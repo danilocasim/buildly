@@ -2,11 +2,12 @@
 
 // The workspace: toolbar (grows in 5.7), chat (5.2), preview (5.3). Follows the project's
 // SSE stream and resyncs the stored state from the API when a build finishes.
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceState } from "@/src/server/workspace";
 import { ChatPanel } from "./ChatPanel";
+import { OpenOnPhoneModal } from "./OpenOnPhoneModal";
 import { PreviewPanel } from "./PreviewPanel";
 import { applyDelta, applyEvent, fromServer, isActive, type ClientState } from "./state";
 
@@ -72,6 +73,36 @@ export function Workspace({ initial }: { initial: WorkspaceState }) {
 
   const active = state.generations.find(isActive);
 
+  // Open on phone (TODO 5.4.1): the modal records the opening and asks the worker to push
+  // the snapshot, so the session behind the QR is live; the URL arrives once a channel exists.
+  const [phone, setPhone] = useState<{ open: boolean; url: string | null; hasSnapshot: boolean }>({
+    open: false,
+    url: null,
+    hasSnapshot: false,
+  });
+  const [phoneOpened, setPhoneOpened] = useState(false);
+  const openOnPhone = useCallback(async () => {
+    setPhone((p) => ({ ...p, open: true }));
+    setPhoneOpened(true);
+    const response = await fetch(`/api/projects/${projectId}/phone`, { method: "POST" });
+    if (response.ok) {
+      const body = (await response.json()) as { url: string | null; hasSnapshot: boolean };
+      setPhone((p) => ({ ...p, url: body.url, hasSnapshot: body.hasSnapshot }));
+    }
+  }, [projectId]);
+  // A preview push can create the channel after the modal opened: ask again.
+  useEffect(() => {
+    if (!phone.open || phone.url) return;
+    const timer = setInterval(() => {
+      void fetch(`/api/projects/${projectId}/preview`, { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<{ expoGoUrl: string | null }>) : null))
+        .then((data) => {
+          if (data?.expoGoUrl) setPhone((p) => ({ ...p, url: data.expoGoUrl }));
+        });
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [phone.open, phone.url, projectId]);
+
   return (
     <div className="flex h-screen flex-col bg-bg">
       <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4">
@@ -83,7 +114,23 @@ export function Workspace({ initial }: { initial: WorkspaceState }) {
           <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" /> Expo +
           TypeScript
         </span>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void openOnPhone()}
+            className="flex items-center gap-2 rounded-lg border border-line px-3.5 py-2 text-[14px] font-medium hover:bg-bg"
+          >
+            <Smartphone size={16} aria-hidden="true" /> Open on phone
+          </button>
+        </div>
       </header>
+      {phone.open && (
+        <OpenOnPhoneModal
+          url={phone.url}
+          hasSnapshot={phone.hasSnapshot}
+          onClose={() => setPhone((p) => ({ ...p, open: false }))}
+        />
+      )}
 
       <div className="flex min-h-0 flex-1">
         <section
@@ -108,7 +155,7 @@ export function Workspace({ initial }: { initial: WorkspaceState }) {
             projectId={projectId}
             snapshotId={state.project.currentSnapshotId}
             building={Boolean(active)}
-            phoneVerified={false}
+            phoneVerified={phoneOpened}
           />
         </section>
       </div>

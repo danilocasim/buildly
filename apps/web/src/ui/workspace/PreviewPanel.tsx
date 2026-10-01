@@ -58,7 +58,7 @@ export function PreviewPanel({
         <StatusChip label="Web" value={web.value} tone={web.tone} testId="status-web" />
         <StatusChip
           label="Phone"
-          value={phoneVerified ? "opened in Expo Go" : "not verified"}
+          value={phoneVerified ? "QR opened" : "not verified"}
           tone={phoneVerified ? "ok" : "muted"}
           testId="status-phone"
         />
