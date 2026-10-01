@@ -27,6 +27,8 @@ export interface EvalPorts {
   bundle(files: FileSet, signal: AbortSignal): Promise<CheckOutcome>;
   smoke(slug: StarterSlug, files: FileSet, task: EvalTask): Promise<SmokeResult>;
   now?: () => Date;
+  /** Receives each run's final files and assistant messages (`--keep-files`), for diagnosis. */
+  keep?(task: EvalTask, run: number, files: FileSet, messages: string[]): Promise<void>;
 }
 
 /** One row of the JSON report (EVAL.md "Scoring per run"). */
@@ -104,6 +106,7 @@ export async function runTask(task: EvalTask, run: number, ports: EvalPorts): Pr
     outcome.smoke = await ports.smoke(task.base, files, task);
   }
   const checks = runChecks(task.checks, outcome);
+  await ports.keep?.(task, run, files, messages);
 
   return {
     task: task.id,

@@ -1,9 +1,9 @@
 // pnpm eval --plan-model <m> --edit-model <m> | --model <m>
-//           [--tasks smoke|all|T1,T4] [--runs N] [--out file.json] [--dry-run]
+//           [--tasks smoke|all|T1,T4] [--runs N] [--out file.json] [--dry-run] [--keep-files dir]
 // Real runs call the OpenAI API (OPENAI_API_KEY; models default to GENERATION_MODEL_PLAN
 // and GENERATION_MODEL_EDIT) and Snack; --dry-run uses a scripted provider and skips Snack.
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { typecheckFiles } from "@buildly/checker";
@@ -26,24 +26,22 @@ export interface EvalOptions {
   runs: number;
   models: ModelConfig;
   dryRun: boolean;
+  /** Directory for each run's final files and messages (`--keep-files <dir>`). */
+  keepFiles?: string;
 }
 
-/** Runs every selected task `runs` times, sequentially, and returns the report. */
+/**
+ * Runs every selected task `runs` times, sequentially, and returns the report. `onRun` gets
+ * each record and the report so far, so a caller can save partial results as it goes.
+ */
 export async function runEval(
   options: EvalOptions,
   portsFor: (task: EvalTask) => EvalPorts,
-  onRun: (record: RunRecord) => void = () => {},
+  onRun: (record: RunRecord, soFar: EvalReport) => void | Promise<void> = () => {},
 ): Promise<EvalReport> {
   const startedAt = new Date().toISOString();
   const runs: RunRecord[] = [];
-  for (const task of selectTasks(options.tasks)) {
-    for (let run = 1; run <= options.runs; run++) {
-      const record = await runTask(task, run, portsFor(task));
-      runs.push(record);
-      onRun(record);
-    }
-  }
-  return {
+  const report = (): EvalReport => ({
     version: 1,
     startedAt,
     finishedAt: new Date().toISOString(),
@@ -54,8 +52,16 @@ export async function runEval(
       runs: options.runs,
       dryRun: options.dryRun,
     },
-    runs,
-  };
+    runs: [...runs],
+  });
+  for (const task of selectTasks(options.tasks)) {
+    for (let run = 1; run <= options.runs; run++) {
+      const record = await runTask(task, run, portsFor(task));
+      runs.push(record);
+      await onRun(record, report());
+    }
+  }
+  return report();
 }
 
 const BUNDLE_TIMEOUT_MS = 60_000;
@@ -102,6 +108,7 @@ export function parseOptions(argv: string[]): EvalOptions & { out?: string } {
       runs: { type: "string", default: "1" },
       out: { type: "string" },
       "dry-run": { type: "boolean", default: false },
+      "keep-files": { type: "string" },
     },
     strict: true,
   });
@@ -116,6 +123,7 @@ export function parseOptions(argv: string[]): EvalOptions & { out?: string } {
     runs,
     models: modelsFromConfig({ GENERATION_MODEL_PLAN: plan, GENERATION_MODEL_EDIT: edit }),
     dryRun: values["dry-run"],
+    keepFiles: values["keep-files"],
     out: values.out,
   };
 }
@@ -131,7 +139,26 @@ export function defaultOutPath(options: EvalOptions, date = new Date()): string 
 export async function main(argv: string[]): Promise<void> {
   const options = parseOptions(argv);
   const out = resolve(options.out ?? defaultOutPath(options));
-  const report = await runEval(options, defaultPorts(options.models, options.dryRun), (r) =>
+  await mkdir(dirname(out), { recursive: true });
+  const save = (report: EvalReport) => writeFile(out, `${JSON.stringify(report, null, 2)}\n`);
+  const portsFor = defaultPorts(options.models, options.dryRun);
+  const keepDir = options.keepFiles ? resolve(options.keepFiles) : undefined;
+  const ports = (task: EvalTask): EvalPorts => ({
+    ...portsFor(task),
+    keep: keepDir
+      ? async (t, run, files, messages) => {
+          const dir = join(keepDir, `${t.id}-${run}`);
+          for (const [path, contents] of Object.entries(files)) {
+            await mkdir(dirname(join(dir, "files", path)), { recursive: true });
+            await writeFile(join(dir, "files", path), contents);
+          }
+          await writeFile(join(dir, "messages.md"), messages.join("\n\n---\n\n"));
+        }
+      : undefined,
+  });
+  const report = await runEval(options, ports, async (r, soFar) => {
+    // Saved after every run, so a stopped eval keeps what it finished.
+    await save(soFar);
     process.stderr.write(
       `${r.task} #${r.run} ${r.passed ? "passed" : "FAILED"} ${r.status} ${r.wall_seconds}s $${r.cost_usd.toFixed(4)}` +
         `${
@@ -142,10 +169,9 @@ export async function main(argv: string[]): Promise<void> {
                 .map((c) => c.name)
                 .join("; ")})`
         }\n`,
-    ),
-  );
-  await mkdir(dirname(out), { recursive: true });
-  await writeFile(out, `${JSON.stringify(report, null, 2)}\n`);
+    );
+  });
+  await save(report);
   process.stdout.write(renderMarkdown(report));
   process.stderr.write(`Report written to ${out}\n`);
 }

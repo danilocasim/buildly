@@ -1,0 +1,358 @@
+{
+  "version": 1,
+  "startedAt": "2026-10-01T14:32:27.189Z",
+  "finishedAt": "2026-10-01T14:50:47.818Z",
+  "config": {
+    "planModel": "gpt-6.1-sol",
+    "editModel": "gpt-6.1-sol",
+    "tasks": "all",
+    "runs": 1,
+    "dryRun": false
+  },
+  "runs": [
+    {
+      "task": "T1",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": false,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "entries list and entry detail",
+          "ok": false,
+          "detail": "routes: home, tags, about, tabs, entrydetail, entryeditor, tagentries"
+        },
+        {
+          "name": "models Entry",
+          "ok": true
+        },
+        {
+          "name": "seed has ≥ 3 entries",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 13,
+      "input_tokens": 108143,
+      "cached_tokens": 94609,
+      "output_tokens": 7577,
+      "cost_usd": 0.119046,
+      "wall_seconds": 183.6,
+      "rejections": 0
+    },
+    {
+      "task": "T2",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": false,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": false,
+          "detail": "no type check ran"
+        },
+        {
+          "name": "bundle ok",
+          "ok": false,
+          "detail": "no bundle ran"
+        },
+        {
+          "name": "models Habit, CheckIn",
+          "ok": true
+        },
+        {
+          "name": "a Today screen",
+          "ok": false,
+          "detail": "routes: home, about, tabs"
+        }
+      ],
+      "status": "timed_out",
+      "error_code": "timeout",
+      "repair_attempts": 0,
+      "turns": 12,
+      "input_tokens": 101472,
+      "cached_tokens": 86311,
+      "output_tokens": 8732,
+      "cost_usd": 0.133837,
+      "wall_seconds": 245,
+      "rejections": 0
+    },
+    {
+      "task": "T3",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": false,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "models Item, Adjustment",
+          "ok": false,
+          "detail": "missing Adjustment; exported types: StockAdjustment, Item"
+        },
+        {
+          "name": "adjust flow updates quantity",
+          "ok": false,
+          "detail": "no /adjust/i route or screen"
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 9,
+      "input_tokens": 69464,
+      "cached_tokens": 57244,
+      "output_tokens": 6189,
+      "cost_usd": 0.098151,
+      "wall_seconds": 162.2,
+      "rejections": 0
+    },
+    {
+      "task": "T4",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": true
+        },
+        {
+          "name": "new tab registered",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 10,
+      "input_tokens": 97535,
+      "cached_tokens": 84949,
+      "output_tokens": 4170,
+      "cost_usd": 0.081645,
+      "wall_seconds": 111.7,
+      "rejections": 0
+    },
+    {
+      "task": "T5",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "schemaVersion bumped",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 7,
+      "input_tokens": 68916,
+      "cached_tokens": 56638,
+      "output_tokens": 3679,
+      "cost_usd": 0.073138,
+      "wall_seconds": 84.4,
+      "rejections": 0
+    },
+    {
+      "task": "T6",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": false,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "no quantity identifier",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": false,
+          "detail": "failed: adjusts stock by −2, lowering the stockLevel and recording an Adjustment"
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 8,
+      "input_tokens": 79493,
+      "cached_tokens": 67381,
+      "output_tokens": 3456,
+      "cost_usd": 0.071566,
+      "wall_seconds": 100.3,
+      "rejections": 0
+    },
+    {
+      "task": "T7",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok in ≤ 2 attempts",
+          "ok": true
+        },
+        {
+          "name": "no unrelated files changed",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 3,
+      "input_tokens": 19105,
+      "cached_tokens": 12195,
+      "output_tokens": 693,
+      "cost_usd": 0.02542,
+      "wall_seconds": 26.3,
+      "rejections": 0
+    },
+    {
+      "task": "T8",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 5,
+      "input_tokens": 39060,
+      "cached_tokens": 29769,
+      "output_tokens": 2105,
+      "cost_usd": 0.047247,
+      "wall_seconds": 56.1,
+      "rejections": 0
+    },
+    {
+      "task": "T9",
+      "group": "guardrail",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": true,
+      "checks": [
+        {
+          "name": "explains react-native-maps is unavailable, no package change",
+          "ok": true
+        },
+        {
+          "name": "no failed state from a crash",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 8,
+      "input_tokens": 75118,
+      "cached_tokens": 63046,
+      "output_tokens": 4141,
+      "cost_usd": 0.077883,
+      "wall_seconds": 92.7,
+      "rejections": 0
+    },
+    {
+      "task": "T10",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-6.1-sol",
+      "passed": false,
+      "checks": [
+        {
+          "name": "plan produced",
+          "ok": true
+        },
+        {
+          "name": "build succeeds",
+          "ok": false,
+          "detail": "ended failed (provider_error)"
+        },
+        {
+          "name": "no hang or timeout",
+          "ok": true
+        }
+      ],
+      "status": "failed",
+      "error_code": "provider_error",
+      "repair_attempts": 0,
+      "turns": 3,
+      "input_tokens": 7697,
+      "cached_tokens": 3496,
+      "output_tokens": 336,
+      "cost_usd": 0.014209,
+      "wall_seconds": 21.2,
+      "rejections": 0
+    }
+  ]
+}

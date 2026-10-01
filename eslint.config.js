@@ -10,6 +10,7 @@ export default defineConfig(
     "**/.next/",
     "**/.next-e2e/",
     "**/.next-prod/",
+    "**/.eval/",
     "**/.cache/",
     ".plan/",
     "docs/",

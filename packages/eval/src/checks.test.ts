@@ -1,12 +1,14 @@
 // TODO 4.7.2: each task's checks against a passing and a failing fixture. Passing
 // fixtures are the committed starters (or small edits of them), so the checks are known
 // to accept real, working apps.
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadTemplateFiles } from "@buildly/foundation";
 import { emptyUsage, type FileSet, type RunResult } from "@buildly/generator";
 import { loadStarterFiles } from "@buildly/starters";
 import { changedPaths, runChecks, type RunOutcome } from "./checks";
-import { T7_INJECTED, TASKS, baseFilesFor, selectTasks, type TaskId } from "./tasks";
+import { T7_INJECTED, TASKS, baseFilesFor, selectTasks, t6SmokeTest, type TaskId } from "./tasks";
 
 const task = (id: TaskId) => TASKS.find((t) => t.id === id)!;
 
@@ -60,13 +62,26 @@ describe("task checks", () => {
         "export interface JournalEntry ",
       ),
     };
+    // A qualified name is still the model (EVAL.md T1: "store has Entry model").
     expect(
       runChecks(task("T1").checks, outcome({ baseFiles: template, files: renamed })).find(
         (c) => c.name === "models Entry",
       ),
+    ).toMatchObject({ ok: true });
+    const unrelated = {
+      ...journal,
+      "src/data/models.ts": journal["src/data/models.ts"]!.replace(
+        "export interface Entry ",
+        "export interface Note ",
+      ),
+    };
+    expect(
+      runChecks(task("T1").checks, outcome({ baseFiles: template, files: unrelated })).find(
+        (c) => c.name === "models Entry",
+      ),
     ).toMatchObject({
       ok: false,
-      detail: expect.stringContaining("exported types: Mood, JournalEntry, Tag"),
+      detail: expect.stringContaining("exported types: Mood, Note, Tag"),
     });
     expect(failures("T1", outcome({ baseFiles: template, files: template }))).toEqual([
       "entries list and entry detail",
@@ -197,6 +212,14 @@ describe("task checks", () => {
     expect(
       failures("T9", outcome({ baseFiles: journal, files: journal, messages: refusal })),
     ).toEqual([]);
+    // gpt-6-luna's wording in E1, which the first pattern missed.
+    const lunaRefusal = [
+      "Plan: check the screens, then add a map if the allowed dependencies support it.",
+      "I couldn’t add a map: `react-native-maps` is not among the allowed imports, and project configuration files are read-only, so adding that dependency isn’t possible here.",
+    ];
+    expect(
+      failures("T9", outcome({ baseFiles: journal, files: journal, messages: lunaRefusal })),
+    ).toEqual([]);
     const usesMaps = {
       ...journal,
       "src/screens/MapScreen.tsx": 'import MapView from "react-native-maps";\n',
@@ -255,5 +278,26 @@ describe("tasks", () => {
       "c",
       "d",
     ]);
+  });
+});
+
+describe("T6 smoke rewrite", () => {
+  const source = readFileSync(
+    fileURLToPath(new URL("../../starters/test/inventory.test.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  it("accepts either spelling of the after-value and the stock label's test ID", () => {
+    const test = t6SmokeTest(source);
+    expect(test).toContain("findByTestId(/^item-(quantity|stock-?level)$/i)");
+    expect(test).toContain("recorded[0]!.stockLevelAfter ?? recorded[0]!.quantityAfter");
+    expect(test).toContain("expect(item.stockLevel).toBe(22)");
+    expect(test).not.toContain("item.quantity");
+  });
+
+  it("fails loudly when the starter test drifts", () => {
+    expect(() => t6SmokeTest(source.replace("quantityAfter: 22", "after: 22"))).toThrow(
+      /not found/,
+    );
   });
 });

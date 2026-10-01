@@ -49,6 +49,34 @@ export const SMOKE_TASK_IDS: TaskId[] = ["T1", "T4", "T7"];
 export const T7_INJECTED = '\nexport const entriesTitle: number = "Entries";\n';
 const T7_FILE = "src/screens/EntriesScreen.tsx";
 
+/** Replaces `from` once, and fails loudly when the starter test no longer contains it. */
+function replaceOnce(source: string, from: string, to: string): string {
+  if (!source.includes(from)) throw new Error(`T6 smoke rewrite: "${from}" not found`);
+  return source.replace(from, to);
+}
+
+/**
+ * T6's version of the inventory smoke test. "Everywhere" lets a correct rename also touch
+ * compound names and test IDs, so the test accepts both spellings of those: `quantityAfter`
+ * or `stockLevelAfter`, and the stock label's test ID as item-quantity, item-stockLevel, or
+ * item-stock-level. Plain `quantity` identifiers must become `stockLevel`.
+ */
+export function t6SmokeTest(source: string): string {
+  let test = replaceOnce(
+    source,
+    'expect(recorded).toEqual([expect.objectContaining({ reason: "Damaged", quantityAfter: 22 })]);',
+    'expect(recorded).toEqual([expect.objectContaining({ reason: "Damaged" })]);\n' +
+      "    expect(recorded[0]!.stockLevelAfter ?? recorded[0]!.quantityAfter).toBe(22);",
+  );
+  test = test.replace(/\bquantity\b/g, "stockLevel");
+  // After the word rename, so the pattern keeps the original spelling too.
+  return replaceOnce(
+    test,
+    'findByTestId("item-stockLevel")',
+    "findByTestId(/^item-(quantity|stock-?level)$/i)",
+  );
+}
+
 export const TASKS: EvalTask[] = [
   {
     id: "T1",
@@ -120,7 +148,7 @@ export const TASKS: EvalTask[] = [
     prompt: "Rename quantity to stockLevel everywhere",
     checks: [tscOk, noIdentifier("quantity"), smokePasses],
     // The smoke test reads item.quantity; it follows the same rename.
-    smokeTest: (source) => source.replace(/\bquantity\b/g, "stockLevel"),
+    smokeTest: t6SmokeTest,
   },
   {
     id: "T7",

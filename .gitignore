@@ -13,8 +13,11 @@ coverage
 !packages/foundation/dist/
 !packages/starters/dist/
 
-# Eval harness output and smoke-test scratch dirs
-.eval/
+# Eval harness output and smoke-test scratch dirs. Model reports at the root of .eval/ are
+# committed (TODO 7.3.1); dry runs, --keep-files dirs, and smoke scratch are not.
+.eval/*
+!/.eval/*.json
+/.eval/*dry-run*.json
 
 # Fetched third-party sources (packages/web-player/.cache)
 .cache/

@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 30
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GENERATION_MODEL_PLAN: ${{ vars.GENERATION_MODEL_PLAN || 'gpt-6.1-sol' }}
+      GENERATION_MODEL_PLAN: ${{ vars.GENERATION_MODEL_PLAN || 'gpt-5.3-codex' }}
       GENERATION_MODEL_EDIT: ${{ vars.GENERATION_MODEL_EDIT || 'gpt-6-luna' }}
       # Optional: where the JSON is posted (HOSTING.md §3). Without these the report is
       # only kept as a workflow artifact.

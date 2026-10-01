@@ -1,0 +1,351 @@
+{
+  "version": 1,
+  "startedAt": "2026-10-01T15:28:06.420Z",
+  "finishedAt": "2026-10-01T15:34:56.694Z",
+  "config": {
+    "planModel": "gpt-5.3-codex",
+    "editModel": "gpt-6-luna",
+    "tasks": "all",
+    "runs": 1,
+    "dryRun": false
+  },
+  "runs": [
+    {
+      "task": "T1",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-5.3-codex",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "entries list and entry detail",
+          "ok": true
+        },
+        {
+          "name": "models Entry",
+          "ok": true
+        },
+        {
+          "name": "seed has ≥ 3 entries",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 1,
+      "turns": 6,
+      "input_tokens": 51699,
+      "cached_tokens": 31309,
+      "output_tokens": 7511,
+      "cost_usd": 0.084729,
+      "wall_seconds": 72.1,
+      "rejections": 0
+    },
+    {
+      "task": "T2",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-5.3-codex",
+      "passed": false,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "models Habit, CheckIn",
+          "ok": true
+        },
+        {
+          "name": "a Today screen",
+          "ok": false,
+          "detail": "routes: habits, about, tabs, addhabit, habitdetail"
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 1,
+      "turns": 6,
+      "input_tokens": 47733,
+      "cached_tokens": 33217,
+      "output_tokens": 6580,
+      "cost_usd": 0.072035,
+      "wall_seconds": 58.4,
+      "rejections": 0
+    },
+    {
+      "task": "T3",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-5.3-codex",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "models Item, Adjustment",
+          "ok": true
+        },
+        {
+          "name": "adjust flow updates quantity",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 1,
+      "turns": 7,
+      "input_tokens": 63477,
+      "cached_tokens": 50670,
+      "output_tokens": 6214,
+      "cost_usd": 0.067847,
+      "wall_seconds": 59.1,
+      "rejections": 0
+    },
+    {
+      "task": "T4",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6-luna",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": true
+        },
+        {
+          "name": "new tab registered",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 3,
+      "input_tokens": 25353,
+      "cached_tokens": 14320,
+      "output_tokens": 4012,
+      "cost_usd": 0.003528,
+      "wall_seconds": 24.9,
+      "rejections": 0
+    },
+    {
+      "task": "T5",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6-luna",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "schemaVersion bumped",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 3,
+      "input_tokens": 25891,
+      "cached_tokens": 14897,
+      "output_tokens": 2986,
+      "cost_usd": 0.003016,
+      "wall_seconds": 23,
+      "rejections": 0
+    },
+    {
+      "task": "T6",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6-luna",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "no quantity identifier",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 4,
+      "input_tokens": 34391,
+      "cached_tokens": 21940,
+      "output_tokens": 3841,
+      "cost_usd": 0.003696,
+      "wall_seconds": 43.4,
+      "rejections": 0
+    },
+    {
+      "task": "T7",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6-luna",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok in ≤ 2 attempts",
+          "ok": true
+        },
+        {
+          "name": "no unrelated files changed",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 3,
+      "input_tokens": 25066,
+      "cached_tokens": 15319,
+      "output_tokens": 1085,
+      "cost_usd": 0.001914,
+      "wall_seconds": 15.2,
+      "rejections": 0
+    },
+    {
+      "task": "T8",
+      "group": "edit",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6-luna",
+      "passed": true,
+      "checks": [
+        {
+          "name": "tsc ok",
+          "ok": true
+        },
+        {
+          "name": "bundle ok",
+          "ok": true
+        },
+        {
+          "name": "starter smoke tests pass",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 3,
+      "input_tokens": 23786,
+      "cached_tokens": 13959,
+      "output_tokens": 2819,
+      "cost_usd": 0.002777,
+      "wall_seconds": 31.2,
+      "rejections": 0
+    },
+    {
+      "task": "T9",
+      "group": "guardrail",
+      "kind": "edit",
+      "run": 1,
+      "model": "gpt-6-luna",
+      "passed": true,
+      "checks": [
+        {
+          "name": "explains react-native-maps is unavailable, no package change",
+          "ok": true
+        },
+        {
+          "name": "no failed state from a crash",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 0,
+      "turns": 3,
+      "input_tokens": 19796,
+      "cached_tokens": 12360,
+      "output_tokens": 683,
+      "cost_usd": 0.001394,
+      "wall_seconds": 10,
+      "rejections": 0
+    },
+    {
+      "task": "T10",
+      "group": "initial",
+      "kind": "initial",
+      "run": 1,
+      "model": "gpt-5.3-codex",
+      "passed": true,
+      "checks": [
+        {
+          "name": "plan produced",
+          "ok": true
+        },
+        {
+          "name": "build succeeds",
+          "ok": true
+        },
+        {
+          "name": "no hang or timeout",
+          "ok": true
+        }
+      ],
+      "status": "succeeded",
+      "error_code": null,
+      "repair_attempts": 1,
+      "turns": 6,
+      "input_tokens": 44407,
+      "cached_tokens": 31879,
+      "output_tokens": 5786,
+      "cost_usd": 0.065785,
+      "wall_seconds": 54.9,
+      "rejections": 0
+    }
+  ]
+}
