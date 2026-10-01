@@ -8,11 +8,20 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "export-starter": "tsx scripts/export-starter.ts"
   },
   "devDependencies": {
+    "@buildly/foundation": "workspace:*",
+    "@buildly/starters": "workspace:*",
     "@types/node": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@buildly/scripts": "workspace:*",
+    "@buildly/shared": "workspace:*",
+    "fflate": "0.8.3"
   }
 }

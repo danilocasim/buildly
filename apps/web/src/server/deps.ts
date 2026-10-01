@@ -11,7 +11,10 @@ export interface Deps {
   /** The pool behind `db`; the SSE stream LISTENs on a dedicated connection from it. */
   pool: pg.Pool;
   email: EmailSender;
-  storage: Pick<Storage, "getSnapshot" | "putSnapshot" | "delete">;
+  storage: Pick<
+    Storage,
+    "getSnapshot" | "putSnapshot" | "delete" | "putExport" | "signedDownloadUrl"
+  >;
   appUrl: string;
   /** Buildly's self-hosted Snack web player (D18), with %%SDK_VERSION%% for the SDK major. */
   webPlayerURL?: string;

@@ -14,5 +14,8 @@
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "exports": {
+    "./check-no-secrets": "./check-no-secrets.ts"
   }
 }

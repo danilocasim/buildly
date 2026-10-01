@@ -31,20 +31,24 @@ const RULES: Rule[] = [
 
 const SKIPPED_DIRS = new Set(["node_modules", ".git"]);
 
-/** Returns every rule hit under `root`. Symlinks are not followed. */
-export async function scanDirectory(root: string): Promise<Finding[]> {
+/** Returns every rule hit in an in-memory file set (path → contents), e.g. an export. */
+export function scanFiles(files: Record<string, string>): Finding[] {
   const findings: Finding[] = [];
-  for await (const file of walk(root)) {
-    const lines = (await readFile(file, "utf8")).split("\n");
-    lines.forEach((text, index) => {
+  for (const [file, contents] of Object.entries(files)) {
+    contents.split("\n").forEach((text, index) => {
       for (const rule of RULES) {
-        if (rule.pattern.test(text)) {
-          findings.push({ file: relative(root, file), line: index + 1, rule: rule.name });
-        }
+        if (rule.pattern.test(text)) findings.push({ file, line: index + 1, rule: rule.name });
       }
     });
   }
   return findings;
+}
+
+/** Returns every rule hit under `root`. Symlinks are not followed. */
+export async function scanDirectory(root: string): Promise<Finding[]> {
+  const files: Record<string, string> = {};
+  for await (const file of walk(root)) files[relative(root, file)] = await readFile(file, "utf8");
+  return scanFiles(files);
 }
 
 async function* walk(dir: string): AsyncGenerator<string> {

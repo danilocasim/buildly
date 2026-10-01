@@ -84,6 +84,7 @@ pnpm --filter starters exec jest --selectProjects journal # one starter's smoke 
 pnpm --filter foundation digest        # regenerate dist/api-digest.md and dist/foundation-files.json (CI fails if stale)
 pnpm checker:selftest                  # type-check the journal starter, fail if warm ≥ 15 s
 pnpm check:secrets <dir>               # secret-leak guard; exits 1 on a finding
+pnpm --filter @buildly/exporter export-starter journal /tmp/journal.zip [free|pro]   # a starter's export ZIP (what 6.3.4's CI job checks)
 pnpm test:snack                        # live Snack integration test (network; skipped by `pnpm test` and CI)
 pnpm eval --tasks smoke --runs 1 --dry-run --model gpt-6-luna   # eval harness, scripted provider, free
 pnpm eval --plan-model <m> --edit-model <m> --tasks smoke|all|T1,T4 --runs N   # real API calls (.env OPENAI_API_KEY); writes .eval/*.json
