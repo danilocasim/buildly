@@ -77,6 +77,7 @@ test("a prompt creates the project, lands in the workspace with the first step w
   await page.getByRole("menuitem", { name: "Rename" }).click();
   await card.getByLabel("Project name").fill("Welcome app");
   await card.getByLabel("Project name").press("Enter");
+  await expect(card).toContainText("Welcome app"); // the PATCH has returned
   await page.reload();
   await expect(page.getByTestId("project-card").filter({ hasText: "Welcome app" })).toHaveCount(1);
   await page
