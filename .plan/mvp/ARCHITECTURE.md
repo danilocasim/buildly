@@ -79,7 +79,7 @@ Rules the code must enforce:
 | Tool | Args | Server validation |
 | --- | --- | --- |
 | `list_files` | none | Returns project-owned paths only, never foundation internals |
-| `read_file` | `path` | Path must be inside allowed layout (`src/screens/**`, `src/data/models.ts`, `src/data/seed.ts`, `src/navigation.tsx`, `app.json` name only) or a foundation read-only path |
+| `read_file` | `path` | Path must be inside allowed layout (`src/screens/**`, `src/data/models.ts`, `src/data/seed.ts`, `src/navigation.tsx`) or a foundation read-only path (including `app.json`; Buildly writes the app name into it from the project name, the model never edits it) |
 | `write_file` | `path`, `contents` | Same layout rules; rejects `package.json`, `foundation.json`, `src/data/store.ts`, `src/theme/**`, `src/components/**`; rejects imports not in the allowlist; size cap 64 KB per file |
 | `delete_file` | `path` | Only project-owned paths |
 | `finish` | `summary`, `screens[]` | Ends the edit loop; `screens` feeds the screen list |

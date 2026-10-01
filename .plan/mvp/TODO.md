@@ -227,12 +227,15 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.2 Tool layer
 
-- [ ] 4.2.1 In-memory `ProjectFiles` with `list/read/write/delete` and a change log.
+- [x] 4.2.1 In-memory `ProjectFiles` with `list/read/write/delete` and a change log.
   Verify: unit tests: write then read; delete then list; change log records every mutation.
-- [ ] 4.2.2 Validation per ARCHITECTURE.md §4: layout globs, forbidden files, path traversal, 64 KB cap, import allowlist scan, rejection budget of 10; a `read_file` of a missing project file returns "not found" without spending the budget (SPIKES.md S3).
+  Verified 2026-10-01: `packages/generator/src/tools/project-files.test.ts`: write then read; delete then list; the change log records each write (created or not, bytes) and delete in order, and nothing for a no-op delete.
+- [x] 4.2.2 Validation per ARCHITECTURE.md §4: layout globs, forbidden files, path traversal, 64 KB cap, import allowlist scan, rejection budget of 10; a `read_file` of a missing project file returns "not found" without spending the budget (SPIKES.md S3).
   Verify: unit tests: `../secrets`, `package.json`, `src/data/store.ts`, an import of `react-native-maps`, a 65 KB file → each rejected with a distinct reason; 11th rejection fails the run.
-- [ ] 4.2.3 `finish` tool captures `summary` and `screens[]`; screens validated against files that register a route.
+  Verified 2026-10-01: `src/tools/executor.test.ts` against the real `foundation.json` and journal files: `../secrets` → `path_traversal`, `package.json` → `forbidden_file`, `src/data/store.ts` → `read_only`, a `react-native-maps` import → `import_not_allowed`, a 65 KB file → `too_large`, nothing written; the 11th rejection throws `RejectionBudgetExceeded`; reading or deleting a missing file returns "not found" without spending budget. `app.json` is read-only to the model (the app name comes from the project name).
+- [x] 4.2.3 `finish` tool captures `summary` and `screens[]`; screens validated against files that register a route.
   Verify: unit test: a screen name without a matching route file is dropped with a warning.
+  Verified 2026-10-01: `finish` with "Settings" on the journal starter keeps Entries, Entry detail, New entry, Tags and drops Settings with a warning; routes are read from `<X.Screen name="…">` in `src/navigation.tsx`.
 
 ### Slice 4.3 Context builder
 

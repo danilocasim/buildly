@@ -329,6 +329,9 @@ importers:
 
   packages/generator:
     dependencies:
+      '@buildly/foundation':
+        specifier: workspace:*
+        version: link:../foundation
       '@buildly/shared':
         specifier: workspace:*
         version: link:../shared
@@ -336,6 +339,9 @@ importers:
         specifier: 7.25.0
         version: 7.25.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@6.29.0)(ws@8.22.0)(zod@4.6.5)
     devDependencies:
+      '@buildly/starters':
+        specifier: workspace:*
+        version: link:../starters
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.4
