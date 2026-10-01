@@ -239,10 +239,12 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.3 Context builder
 
-- [ ] 4.3.1 Build messages in the order of ARCHITECTURE.md §5 with the API digest and `foundation.json` rules; deterministic byte-identical prefix across turns.
+- [x] 4.3.1 Build messages in the order of ARCHITECTURE.md §5 with the API digest and `foundation.json` rules; deterministic byte-identical prefix across turns.
   Verify: snapshot test of the built context for the journal starter; test asserts the first three messages are identical between turn 1 and turn 2.
-- [ ] 4.3.2 Token budget: estimate with a tokenizer; summarize history beyond 20 messages; fail fast with `context_too_large` above 80k.
+  Verified 2026-10-01: `packages/generator/src/context.test.ts`: snapshot of the journal starter context (system prompt with `foundation.json` rules, API digest, files, user message); the first three messages, and the provider `instructions` plus first two input items, are byte-identical between turn 1 and turn 2 even after the model edits a file (edits travel as tool results). The journal context is about 5,600 tokens.
+- [x] 4.3.2 Token budget: estimate with a tokenizer; summarize history beyond 20 messages; fail fast with `context_too_large` above 80k.
   Verify: unit tests: 25-message history yields a summary message; an oversized project triggers the error.
+  Verified 2026-10-01: `gpt-tokenizer` (o200k_base) estimate; a 25-message history keeps the last 20 and folds the first 5 into one summary message; a 40-file oversized project throws `ContextTooLargeError` (`context_too_large`) above 80k.
 
 ### Slice 4.4 Generation loop
 

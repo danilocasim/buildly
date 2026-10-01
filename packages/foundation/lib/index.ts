@@ -48,3 +48,8 @@ export function loadFoundationFiles(): FileSet {
 export function loadTemplateFiles(): FileSet {
   return readMatching(readManifest().layout.templateFiles);
 }
+
+/** dist/api-digest.md: the foundation API as the model sees it (TODO 2.3.2). */
+export function readApiDigest(): string {
+  return readFileSync(join(foundationDir, "dist", "api-digest.md"), "utf8");
+}
