@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3300",
+    "dev": "node scripts/dev.cjs",
     "build": "next build",
     "start": "next start --port 3300",
     "typecheck": "tsc --noEmit",

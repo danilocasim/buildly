@@ -9,7 +9,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "start": "tsx src/main.ts"
+    "start": "node --env-file-if-exists=../../.env --import tsx src/main.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

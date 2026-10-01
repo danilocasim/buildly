@@ -121,10 +121,10 @@ pnpm db:migrate / db:migrate:down      # apply / revert the newest migration (DA
 pnpm db:generate                       # after editing packages/db/src/schema.ts; also write migrations/down/<tag>.sql
 pnpm db:seed                           # admin@buildly.test (admin), 3 invites, a project per starter; idempotent
 pnpm db:grant-credits <email> <n> [note]   # top-up build credits (admin grant until Stripe, D21)
-pnpm --filter @buildly/web dev         # http://localhost:3300 (needs a .env with the local values from .env.example)
+pnpm --filter @buildly/web dev         # http://localhost:3300; loads the repo-root .env (copy .env.example) via --env-file-if-exists
 pnpm --filter @buildly/web test:e2e    # Playwright against a fresh buildly_e2e database, server on :3310, fake worker on :3311
 SNACK_LIVE=1 pnpm --filter @buildly/web exec playwright test -g @snack   # live preview checks through CloudFront and Snack (network)
-pnpm --filter @buildly/worker start    # the worker loop
+pnpm --filter @buildly/worker start    # the worker loop; loads the repo-root .env the same way (production sets real env vars)
 ```
 
 - The db scripts and tests never read `.env`: they default to the docker services, so a `DATABASE_URL` pointing at another Postgres cannot be migrated by accident.
