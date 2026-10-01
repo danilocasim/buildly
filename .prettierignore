@@ -7,3 +7,4 @@ packages/foundation/dist
 .cache
 apps/web/e2e/.state.json
 apps/web/test-results
+packages/starters/dist
