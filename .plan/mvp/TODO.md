@@ -221,9 +221,9 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 - [x] 4.1.2 `rates.ts` and `costFor(usage, model)` with Standard rates for every configured model.
   Verify: unit test: known usage → expected USD to 6 decimals for `gpt-6.1-sol`, `gpt-5.3-codex`, and `gpt-6-luna`; unknown model throws.
   Verified 2026-10-01: `src/rates.test.ts`: hand-computed costs to 6 decimals for all three models (cache writes billed at input on `gpt-5.3-codex`, which has no cache-write price); reproduces S3's recorded $0.0964; unknown model throws.
-- [~] 4.1.3 Model routing: plans and initial builds use `GENERATION_MODEL_PLAN`; follow-up edits and all repairs use `GENERATION_MODEL_EDIT`; the model used is stored on `generations.model`.
+- [x] 4.1.3 Model routing: plans and initial builds use `GENERATION_MODEL_PLAN`; follow-up edits and all repairs use `GENERATION_MODEL_EDIT`; the model used is stored on `generations.model`.
   Verify: unit test with a fake provider: an initial build calls the plan model; a follow-up edit and its repair call the edit model; `generations.model` matches.
-  Status 2026-10-01: `src/routing.ts` (`modelFor`, `primaryModel`, `modelsFromConfig` rejecting unrated models at startup) with unit tests. The Verify (fake provider through a run, `generations.model`) completes with `runGeneration` in slice 4.4.
+  Verified 2026-10-01: `src/routing.ts` plus `src/run.test.ts` with a scripted provider: an initial build calls `gpt-6.1-sol` for its plan and build turns and `gpt-6-luna` for its repair; a follow-up edit and its repair call only `gpt-6-luna`; `RunResult.model` (written to `generations.model`) is the plan model for initial builds and the edit model for edits, checked against the database in the worker test.
 
 ### Slice 4.2 Tool layer
 
@@ -248,16 +248,21 @@ Goal: prompt in, verified snapshot out, with bounded repair and exact cost accou
 
 ### Slice 4.4 Generation loop
 
-- [ ] 4.4.1 State machine per ARCHITECTURE.md §3 implemented as `runGeneration(ctx)` with injectable provider, checker, snack, snapshot store, and clock; registered as the worker's `generation` job handler, which first calls `recheckBuildCaps` (TODO 3.5.2) and fails the generation with the cap code if it is over.
+- [x] 4.4.1 State machine per ARCHITECTURE.md §3 implemented as `runGeneration(ctx)` with injectable provider, checker, snack, snapshot store, and clock; registered as the worker's `generation` job handler, which first calls `recheckBuildCaps` (TODO 3.5.2) and fails the generation with the cap code if it is over.
   Verify: unit tests with fakes: happy path writes steps `plan, edit, typecheck, bundle, snapshot` and status `succeeded`.
-- [ ] 4.4.2 Repair path: typecheck or bundle failure returns diagnostics to the model; max 2 repairs; then `failed` with `error_detail` containing the last diagnostics.
+  Verified 2026-10-01: `packages/generator/src/run.ts` `runGeneration` with injectable provider, typecheck, bundle, store, events, clock, and cancellation; `run.test.ts` happy path records steps plan, edit, typecheck, bundle, snapshot and ends `succeeded`, with a byte-identical prefix on every turn. The worker's `generation` handler (`apps/worker/src/handlers/generation.ts`) calls `recheckBuildCaps` first (over cap → `failed` with the cap code, no model call); it is registered in `main.ts` with the real Snack bundler in slice 4.5.
+- [x] 4.4.2 Repair path: typecheck or bundle failure returns diagnostics to the model; max 2 repairs; then `failed` with `error_detail` containing the last diagnostics.
   Verify: unit tests: fail-fail-pass → succeeded with `repair_attempts = 2`; fail-fail-fail → `failed`, `projects.current_snapshot_id` unchanged.
-- [ ] 4.4.3 Cancel and timeout wired to 3.4.3 and 3.4.4.
+  Verified 2026-10-01: fail, fail, pass → `succeeded` with `repairAttempts` 2 and the diagnostics sent back to the model; fail ×3 → `failed`, `errorCode` `typecheck`, `errorDetail` holds the last diagnostics, no snapshot and the current snapshot untouched; a bundle failure repairs the same way.
+- [x] 4.4.3 Cancel and timeout wired to 3.4.3 and 3.4.4.
   Verify: unit tests: cancel during `editing` → `cancelled`, no snapshot; clock jump past 240 s → `timed_out`.
-- [ ] 4.4.4 Progress events published to a per-project channel (Postgres LISTEN/NOTIFY or a polling table) for the SSE route.
+  Verified 2026-10-01: cancel during editing → `cancelled`, no snapshot, only the plan step recorded; a clock jump past 240 s → `timed_out`; an aborted signal (the worker's hard limit, 3.4.4) → `timed_out`. Cancellation reaches the run through `JobContext.isCancelRequested` (3.4.3).
+- [x] 4.4.4 Progress events published to a per-project channel (Postgres LISTEN/NOTIFY or a polling table) for the SSE route.
   Verify: integration test: run a fake generation; a subscriber receives `plan ready`, `files written`, `types checked`, `preview bundled` in order and nothing before each step's completion.
-- [ ] 4.4.5 Cost and token accounting written to `generations` on every terminal state, and `build.*` analytics events emitted.
+  Verified 2026-10-01: `project_events` table (migration 0002) plus `pg_notify` in the same transaction (`packages/db/src/events.ts`); `apps/worker/src/handlers/generation.test.ts` subscribes with LISTEN and, with the checker and bundler gated, sees nothing past `files_written` while type checking runs and nothing past `types_checked` while bundling runs; final order plan_ready, files_written, types_checked, preview_bundled, snapshot_created, finished, each written after its step row. Assistant text deltas are NOTIFY-only.
+- [x] 4.4.5 Cost and token accounting written to `generations` on every terminal state, and `build.*` analytics events emitted.
   Verify: integration test: after a fake run, `generations.cost_usd` equals `costFor()` of summed usage; `build.finished` event row exists.
+  Verified 2026-10-01: after a run, `generations.cost_usd` equals `costFor()` of the summed usage (per model when repairs use the edit model), tokens and model are set, and `build.started`, ≥ 4 `build.step`, and `build.finished` (with cost and tokens) rows exist.
 
 ### Slice 4.5 Snack session manager
 

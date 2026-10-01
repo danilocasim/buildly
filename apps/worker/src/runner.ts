@@ -11,6 +11,8 @@ export interface JobContext<P = Record<string, unknown>> {
   /** Aborted on cancel or timeout; pass it to anything long-running. */
   signal: AbortSignal;
   log: Logger;
+  /** Whether the user asked to cancel (the API sets jobs.cancel_requested). */
+  isCancelRequested(): Promise<boolean>;
   /** Runs `fn` unless a cancel was requested; checks before every step. */
   step<T>(name: string, fn: () => Promise<T>): Promise<T>;
   /** Registers cleanup (temp dirs, sessions) that runs however the job ends. */
@@ -56,6 +58,7 @@ export async function runJob(
     payload: job.payload,
     signal: controller.signal,
     log: deps.log,
+    isCancelRequested: () => deps.isCancelRequested(),
     async step(name, fn) {
       if (controller.signal.aborted) throw controller.signal.reason;
       if (await deps.isCancelRequested()) {

@@ -116,6 +116,7 @@ export function validateScreens(
 
 export class ToolExecutor {
   readonly rejections: RecordedRejection[] = [];
+  /** Set by the finish tool; read with finishResult(). */
   finished?: FinishResult;
   private readonly allowlist: string[];
 
@@ -126,6 +127,16 @@ export class ToolExecutor {
     private readonly budget = REJECTION_BUDGET,
   ) {
     this.allowlist = Object.keys(manifest.dependencies);
+  }
+
+  /** The last finish call's result, if the model has finished since resetFinish(). */
+  finishResult(): FinishResult | undefined {
+    return this.finished;
+  }
+
+  /** Clears the finish state before a repair pass. */
+  resetFinish(): void {
+    this.finished = undefined;
   }
 
   /** Runs one tool call and returns the text the model sees. */

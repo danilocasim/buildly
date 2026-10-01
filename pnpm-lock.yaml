@@ -154,12 +154,27 @@ importers:
 
   apps/worker:
     dependencies:
+      '@buildly/checker':
+        specifier: workspace:*
+        version: link:../../packages/checker
       '@buildly/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@buildly/foundation':
+        specifier: workspace:*
+        version: link:../../packages/foundation
+      '@buildly/generator':
+        specifier: workspace:*
+        version: link:../../packages/generator
       '@buildly/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@buildly/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+      drizzle-orm:
+        specifier: ^0.45.3
+        version: 0.45.3(@types/pg@8.23.1)(pg@8.23.1)
       tsx:
         specifier: 'catalog:'
         version: 4.23.15
