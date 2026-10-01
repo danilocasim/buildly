@@ -63,6 +63,15 @@ function scriptedProvider(): Provider & { calls: ProviderRequest[] } {
   };
 }
 
+/** Polls `condition` until it holds; fails after `timeoutMs` (CI runners are slow). */
+async function waitFor(condition: () => boolean, timeoutMs = 15_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!condition()) {
+    if (Date.now() > deadline) throw new Error("waitFor: condition not met in time");
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
 function deferred() {
   let resolve!: () => void;
   const promise = new Promise<void>((r) => (resolve = r));
@@ -161,7 +170,10 @@ describe("generation job", () => {
     const { project, generation } = await newBuild("events@example.com");
     const typecheckGate = deferred();
     const bundleGate = deferred();
+    let typecheckEntered = false;
+    let bundleEntered = false;
     const received: { type: string; createdAt: Date }[] = [];
+    const types = () => received.map((e) => e.type);
     const subscription = await events.subscribe(t.pool, t.db, project.id, {
       onEvent: (event) => void received.push({ type: event.type, createdAt: event.createdAt }),
     });
@@ -171,10 +183,12 @@ describe("generation job", () => {
       provider: scriptedProvider(),
       models,
       typecheck: async () => {
+        typecheckEntered = true;
         await typecheckGate.promise;
         return ok;
       },
       bundle: async () => {
+        bundleEntered = true;
         await bundleGate.promise;
         return ok;
       },
@@ -182,19 +196,25 @@ describe("generation job", () => {
     });
 
     const running = handler.run(jobContext({ generationId: generation.id, projectId: project.id }));
-    const settle = () => new Promise((r) => setTimeout(r, 300));
+    try {
+      // The build is parked in the type check: the edit step is done and nothing later ran.
+      await waitFor(() => typecheckEntered && received.length >= 2);
+      expect(types()).toEqual(["plan_ready", "files_written"]);
+      typecheckGate.resolve();
+      await waitFor(() => bundleEntered && received.length >= 3);
+      expect(types()).toEqual(["plan_ready", "files_written", "types_checked"]);
+      bundleGate.resolve();
+      await running;
+      await waitFor(() => received.length >= 7);
+    } finally {
+      // A failed assertion must not leave the build parked, holding a connection.
+      typecheckGate.resolve();
+      bundleGate.resolve();
+      await running.catch(() => undefined);
+      await subscription.close();
+    }
 
-    await settle();
-    expect(received.map((e) => e.type)).toEqual(["plan_ready", "files_written"]); // type check still running
-    typecheckGate.resolve();
-    await settle();
-    expect(received.map((e) => e.type)).toEqual(["plan_ready", "files_written", "types_checked"]); // bundle still running
-    bundleGate.resolve();
-    await running;
-    await settle();
-    await subscription.close();
-
-    expect(received.map((e) => e.type)).toEqual([
+    expect(types()).toEqual([
       "plan_ready",
       "files_written",
       "types_checked",
