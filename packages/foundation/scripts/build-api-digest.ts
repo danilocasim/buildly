@@ -3,7 +3,7 @@
 // such as the web app's bundled routes). CI regenerates both and fails on a diff.
 //
 //   pnpm --filter foundation digest
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadFoundationFiles, loadTemplateFiles, readManifest } from "../lib/index";
@@ -23,5 +23,7 @@ export function foundationFilesJson() {
     manifest: readManifest(),
     files: loadFoundationFiles(),
     templateFiles: loadTemplateFiles(),
+    /** export/README.md, the exported project's README template (TODO 2.3.3). */
+    exportReadme: readFileSync(join(root, "export", "README.md"), "utf8"),
   };
 }

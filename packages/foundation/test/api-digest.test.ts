@@ -23,7 +23,9 @@ describe("API digest", () => {
       manifest: unknown;
       files: Record<string, string>;
       templateFiles: Record<string, string>;
+      exportReadme: string;
     };
+    expect(committed.exportReadme).toBe(readFileSync(join(root, "export", "README.md"), "utf8"));
     expect(committed.manifest).toEqual(
       JSON.parse(readFileSync(join(root, "foundation.json"), "utf8")),
     );

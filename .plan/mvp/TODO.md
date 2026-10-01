@@ -430,14 +430,18 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 ### Slice 6.3 Export
 
-- [ ] 6.3.1 `packages/exporter`: assemble foundation + project files, `package.json` with pinned deps, `app.json` with the project name, README from 2.3.3, attribution flag by plan; produce a ZIP.
+- [x] 6.3.1 `packages/exporter`: assemble foundation + project files, `package.json` with pinned deps, `app.json` with the project name, README from 2.3.3, attribution flag by plan; produce a ZIP.
   Verify: unit test: ZIP entries match the expected set; Free plan README contains "Made with Buildly", Pro does not.
-- [ ] 6.3.2 `POST /api/projects/:id/export` stores the ZIP and returns a signed URL; emits `export.created`.
+  Verified 2026-10-01: `packages/exporter` (`buildExportEntries`, `buildExportZip` on `fflate`, `readExportZip`): the foundation's shipped files, the project files, `app.json` with the project's name, slug, and `showAttribution` by plan, `package.json` with the allowlist pinned from `foundation.json` plus TypeScript and React types (pinned to the foundation catalog by a test), `index.ts` (`registerRootComponent`), the README from `export/README.md` (now carried in `foundation-files.json`), and a `.gitignore`. `src/index.test.ts`: the entry set equals foundation + project + the four generated files; Free README contains "Made with Buildly.", Pro's does not and its `app.json` hides the attribution; the ZIP round-trips.
+- [x] 6.3.2 `POST /api/projects/:id/export` stores the ZIP and returns a signed URL; emits `export.created`.
   Verify: integration test: response URL downloads a ZIP whose size matches `zip_bytes` in the event.
-- [ ] 6.3.3 Secret guard on every export using 0.3.2.
+  Verified 2026-10-01: `POST /api/projects/:id/export` builds the ZIP for the current snapshot, stores it at `exports/{projectId}/{exportId}.zip`, returns a 10-minute signed URL, records an `export` usage event and `export.created` with `zip_bytes`; 409 without a snapshot; 422 when the secret guard blocks. `export.test.ts`: the returned URL downloads a ZIP whose byte length equals `zip_bytes` in the event, and the ZIP holds the README, `app.json`, and the starter's screens. The toolbar's Export code starts the download or shows the API's message.
+- [x] 6.3.3 Secret guard on every export using 0.3.2.
   Verify: CI test unzips a generated export and runs the guard; a fixture containing a key fails the build.
-- [ ] 6.3.4 Exported project runs outside Buildly.
+  Verified 2026-10-01: the guard's rules moved behind `scanFiles` (shared with `scanDirectory`, exported from `@buildly/scripts/check-no-secrets`); the exporter runs it over every entry and throws `ExportBlockedError` naming files and rules but never the match. `index.test.ts`: an unzipped export passes `scanDirectory`; a project file with `sk-abc123` blocks the export. CI's `export-smoke` job also runs `pnpm check:secrets` on the unzipped journal export.
+- [~] 6.3.4 Exported project runs outside Buildly.
   Verify: CI job: unzip, `npm ci`, `npx tsc --noEmit` exit 0; **manual** on a clean machine: `npx expo start` and open in Expo Go following only the README.
+  In progress 2026-10-01: CI job `export-smoke` (`.github/workflows/ci.yml`) exports the journal starter (`pnpm --filter @buildly/exporter export-starter journal <zip>`), unzips it, runs the secret guard, then `npm install` and `npx tsc --noEmit` in the unzipped project (`npm install`, not `npm ci`: exports ship no lockfile, and the README says `npm install`). Pending: the first green run of that job on the Phase 6 PR, and the founder's manual check on a clean machine (`npx expo start`, open in Expo Go following only the README); note date and machine here.
 
 ### Slice 6.4 Settings
 

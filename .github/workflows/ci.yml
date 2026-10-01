@@ -82,3 +82,29 @@ jobs:
 
       - name: E2E tests
         run: pnpm --filter @buildly/web test:e2e
+
+  # An exported project runs outside Buildly (TODO 6.3.4): the journal starter's ZIP installs
+  # with npm and type-checks on its own. `npm install`, not `npm ci`: exports ship no lockfile.
+  export-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Export the journal starter
+        run: pnpm --filter @buildly/exporter export-starter journal /tmp/journal.zip
+      - name: Unzip and run the secret guard
+        run: |
+          mkdir -p /tmp/journal && unzip -q /tmp/journal.zip -d /tmp/journal
+          pnpm check:secrets /tmp/journal
+      - name: Install and type-check the export on its own
+        working-directory: /tmp/journal
+        run: |
+          npm install --no-audit --no-fund
+          npx tsc --noEmit
