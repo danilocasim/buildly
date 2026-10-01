@@ -119,9 +119,10 @@ Goal: the one Expo foundation every generated app is built on, three starters as
 - [x] 2.4.4 Starter manifest `starters.json` (slug, name, description, thumbnail path, screen names) consumed by the web app.
   Verify: unit test: every slug has a directory, a thumbnail file, and a passing smoke test entry.
   Verified 2026-09-30: `packages/starters/starters.json` validated by `starterManifestSchema`; `test/manifest.test.ts` checks each directory, thumbnail PNG (rendered from the real app on web, see `thumbnails/README.md`), smoke test, and registered screens.
-- [~] 2.4.5 Each starter runs in Snack on web and Expo Go.
+- [x] 2.4.5 Each starter runs in Snack on web and Expo Go.
   Verify: **manual** using the S1 spike page pointed at each starter; note date and devices here.
   Status 2026-10-01: **Expo Go passes** for all three on Android (model 2412DPC0AG, store Expo Go): Journal (create, persist), Habit Tracker (check in, streak 2 → 3, History), Inventory (−2 → 22, search "hdmi"); no runtime errors. Sessions came from `spikes/snack-sdk-check/online.ts` (same files as the spike page). The first run found that Expo Go shares AsyncStorage across Snacks, so the store now scopes keys by `app.json` `expo.slug`. **Snack web passes** for all three through the self-hosted player (4b.0.1, 2026-10-01, headless Chromium on the quick-tunnel origin: each starter's web client connected and stayed `ok`; the journal's Entries list rendered). iPhone not tested.
+  Marked verified 2026-10-02 (Phase 8 audit): both halves of the Verify ran with date and device recorded, and the brief (§12) requires web and Expo Go, not a specific phone OS. An iPhone run remains a beta check.
 
 ### Slice 2.5 Checker
 
@@ -498,17 +499,28 @@ Goal: the main editing experience against a real generation stream. Gated by S1.
 
 Check each only with the evidence named.
 
-- [ ] 8.1 Prompt or starter → workspace with a live preview from the generated project. Evidence: 6.1.2, 6.2.2, 5.3.1.
-- [ ] 8.2 Each starter's navigation and CRUD work on web and Expo Go. Evidence: 2.4.1–2.4.3 smoke tests and 2.4.5 manual.
-- [ ] 8.3 Records survive app restart in Expo Go. Evidence: 2.2.4 manual.
-- [ ] 8.4 Add-a-screen edit passes without breaking existing screens. Evidence: EVAL T4 pass in 7.3.2.
-- [ ] 8.5 Data-model change bumps `schemaVersion` and reseeds with a notice. Evidence: EVAL T5 plus 2.2.2.
-- [ ] 8.6 Failed build keeps the last snapshot and explains why. Evidence: 4.4.2, 5.2.2, 7.3.3.
-- [ ] 8.7 Restore swaps source and refreshes preview. Evidence: 4.6.2, 5.7.2.
+- [x] 8.1 Prompt or starter → workspace with a live preview from the generated project. Evidence: 6.1.2, 6.2.2, 5.3.1.
+  Verified 2026-10-02: 6.1.2, 6.2.2, and 5.3.1 are `[x]`; e2e `home.spec.ts` (prompt → workspace), `starters.spec.ts` (starter → workspace with its preview), and `preview.spec.ts` (player iframe on the player origin) pass on `main`.
+- [x] 8.2 Each starter's navigation and CRUD work on web and Expo Go. Evidence: 2.4.1–2.4.3 smoke tests and 2.4.5 manual.
+  Verified 2026-10-02: 2.4.1–2.4.3 smoke tests pass in CI; 2.4.5 manual: all three starters on Snack web through the self-hosted player and in Expo Go on Android (2026-10-01). iPhone not tested; the brief does not require it.
+- [x] 8.3 Records survive app restart in Expo Go. Evidence: 2.2.4 manual.
+  Verified 2026-10-02: 2.2.4 manual, Android Expo Go, 2026-10-01: a created entry survived force-quit and reopen.
+- [x] 8.4 Add-a-screen edit passes without breaking existing screens. Evidence: EVAL T4 pass in 7.3.2.
+  Verified 2026-10-02: T4 passed on the chosen config in `.eval/2026-10-01-tuned-gpt-5.3-codex+gpt-6-luna.json` (tsc, bundle, starter smoke tests, new tab registered).
+- [x] 8.5 Data-model change bumps `schemaVersion` and reseeds with a notice. Evidence: EVAL T5 plus 2.2.2.
+  Verified 2026-10-02: T5 passed in the same report (schemaVersion bumped, smoke tests pass); 2.2.2 store tests cover the reseed and the one-time `didReseed` flag, which `App.tsx` shows as `ReseedNotice`.
+- [x] 8.6 Failed build keeps the last snapshot and explains why. Evidence: 4.4.2, 5.2.2, 7.3.3.
+  Verified 2026-10-02: 4.4.2 (failure keeps the snapshot, `error_detail` set), 5.2.2 (e2e: a failed build keeps the preview), 7.3.3 (user-facing title and help line per error code; e2e for a forced type-check failure).
+- [x] 8.7 Restore swaps source and refreshes preview. Evidence: 4.6.2, 5.7.2.
+  Verified 2026-10-02: 4.6.2 restore handler tests and 5.7.2 e2e `history.spec.ts` (Restore of the first build refreshes the code tab).
 - [ ] 8.8 Export runs with `npm install && npx expo start` on a clean machine. Evidence: 6.3.4.
-- [ ] 8.9 Web and phone verification reported separately. Evidence: 5.3.3.
+  Open 2026-10-02: 6.3.4 is `[~]`. CI `export-smoke` installs and type-checks the journal export; the founder's clean-machine run (`npm install && npx expo start`, open in Expo Go following only the README) is still needed.
+- [x] 8.9 Web and phone verification reported separately. Evidence: 5.3.3.
+  Verified 2026-10-02: 5.3.3 e2e `preview.spec.ts`: after a build the web and phone statuses differ until the QR modal is opened.
 - [ ] 8.10 No OpenAI credentials in client code, Snack sessions, or exports. Evidence: 7.2.1, 6.3.3, 4.5.1 (files sent assertion).
-- [ ] 8.11 Metrics recorded for every generation. Evidence: 7.1.1.
+  Open 2026-10-02: 6.3.3 (export guard) and 4.5.1 (Snack receives only foundation and project files and pinned dependencies) are `[x]`, and CI scans the production client bundle; 7.2.1 is `[~]` until the injection check (a key reference in a client component must fail the scan) is run by hand.
+- [x] 8.11 Metrics recorded for every generation. Evidence: 7.1.1.
+  Verified 2026-10-02: 7.1.1: `build.started`, `build.step`, `build.finished` (tokens, cost, repairs, wall time) per generation from the worker, plus the web events, typed and tested; `/admin/metrics` and `pnpm report:weekly` compute the §1 metrics from them.
 
 ---
 
