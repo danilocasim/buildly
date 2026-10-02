@@ -68,7 +68,7 @@ test("the player iframe is the session's webPreviewURL on the player origin; oth
     .toBe(true);
 });
 
-test("viewport presets resize the frame; Reset demo data records the event", async ({
+test("device presets give the app the phone's width and fit the frame; Reset demo data records the event", async ({
   page,
   context,
 }) => {
@@ -80,11 +80,33 @@ test("viewport presets resize the frame; Reset demo data records the event", asy
   await page.goto(`/app/${project.id}`);
 
   const frame = page.getByTestId("phone-frame");
-  await expect(frame).toHaveAttribute("data-viewport", "large");
-  const large = (await frame.boundingBox())!;
-  await page.getByRole("button", { name: /Viewport: Large phone/ }).click();
-  await expect(frame).toHaveAttribute("data-viewport", "small");
-  await expect.poll(async () => (await frame.boundingBox())!.width).toBeLessThan(large.width);
+  // offsetWidth is the layout width in CSS pixels, before the frame is scaled to fit, so it
+  // is the width the app lays out at: the phone's width in points.
+  const screenWidth = () =>
+    page.getByTestId("phone-screen").evaluate((el) => (el as HTMLElement).offsetWidth);
+  await expect(frame).toHaveAttribute("data-device", "iphone-16");
+  expect(await screenWidth()).toBe(393);
+
+  const picker = page.getByRole("combobox", { name: "Device" });
+  for (const [key, width] of [
+    ["iphone-se", 375],
+    ["iphone-17-pro-max", 440],
+  ] as const) {
+    await picker.selectOption(key);
+    await expect(frame).toHaveAttribute("data-device", key);
+    expect(await screenWidth()).toBe(width);
+    // The whole phone stays inside the window instead of being squeezed or cut off.
+    await expect
+      .poll(async () => {
+        const box = (await frame.boundingBox())!;
+        return box.y >= 0 && box.y + box.height <= 900;
+      })
+      .toBe(true);
+  }
+
+  // The choice is remembered across reloads.
+  await page.reload();
+  await expect(frame).toHaveAttribute("data-device", "iphone-17-pro-max");
 
   await expect(page.getByTestId("web-preview")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Reset demo data" }).click();

@@ -38,7 +38,7 @@ pnpm build:shots && pnpm start:shots &     # serves on http://localhost:3101 fro
 
 - Composer: Build app is disabled until there is a prompt or a starter; the starter menu adds a removable chip; ⌘↵ builds.
 - Chat: sending a change runs a simulated build (about four seconds) that advances the four steps, disables the composer, dims the preview, and can be cancelled.
-- Preview: viewport preset toggles the phone size. The mockup also shows a screen list, which the app dropped (D23).
+- Preview: viewport preset toggles the phone size. The app replaced the two sizes with iPhone models at their real size (D24). The mockup also shows a screen list, which the app dropped (D23).
 - Code tab, Open on phone modal, and History drawer open from the toolbar or by URL.
 - Project name is editable inline.
 

@@ -3,7 +3,8 @@
 import { ChevronDown, RefreshCw, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { RESET_DEMO_DATA_MESSAGE } from "@buildly/shared";
-import { PhoneFrame, VIEWPORTS, type Viewport } from "./PhoneFrame";
+import { DEFAULT_DEVICE, DEVICES, deviceFor } from "./devices";
+import { PhoneFrame } from "./PhoneFrame";
 import { usePlayer, type PreviewData } from "./usePlayer";
 
 export function PreviewPanel({
@@ -19,7 +20,8 @@ export function PreviewPanel({
   phoneVerified: boolean;
 }) {
   const [data, setData] = useState<PreviewData>();
-  const [viewport, setViewport] = useState<Viewport>("large");
+  const [deviceKey, setDeviceKey] = useState(DEFAULT_DEVICE);
+  const device = deviceFor(deviceKey);
   const player = usePlayer(projectId, data);
   // The preview payload follows the current snapshot.
   useEffect(() => {
@@ -33,6 +35,25 @@ export function PreviewPanel({
       cancelled = true;
     };
   }, [projectId, snapshotId]);
+
+  // The chosen phone is a per-browser convenience; it is restored after mount, not during
+  // render, so the server and client render the same default.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DEVICE_STORAGE_KEY);
+      if (saved) setDeviceKey(deviceFor(saved).key);
+    } catch {
+      // Storage can be unavailable; keep the default.
+    }
+  }, []);
+  const chooseDevice = useCallback((key: string) => {
+    setDeviceKey(key);
+    try {
+      localStorage.setItem(DEVICE_STORAGE_KEY, key);
+    } catch {
+      // Not remembered this time.
+    }
+  }, []);
 
   const resetDemoData = useCallback(() => {
     player.frameRef.current?.postMessage({ type: RESET_DEMO_DATA_MESSAGE }, "*");
@@ -78,46 +99,61 @@ export function PreviewPanel({
           >
             <RotateCcw size={13} aria-hidden="true" /> Reset demo data
           </button>
-          <button
-            type="button"
-            onClick={() => setViewport((v) => (v === "large" ? "small" : "large"))}
-            aria-label={`Viewport: ${VIEWPORTS[viewport].label}`}
-            className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[13px] hover:bg-bg"
-          >
-            {VIEWPORTS[viewport].label} <ChevronDown size={13} aria-hidden="true" />
-          </button>
+          <label className="relative flex items-center">
+            <select
+              aria-label="Device"
+              data-testid="device-picker"
+              value={device.key}
+              title={device.sameAs ? `Same screen as ${device.sameAs}` : undefined}
+              onChange={(event) => chooseDevice(event.target.value)}
+              className="appearance-none rounded-lg border border-line bg-surface py-1.5 pr-7 pl-2.5 text-[13px] text-ink hover:bg-bg"
+            >
+              {DEVICES.map((d) => (
+                <option key={d.key} value={d.key}>
+                  {d.label} · {d.width}×{d.height}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              aria-hidden="true"
+              className="pointer-events-none absolute right-2 text-muted"
+            />
+          </label>
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto p-6">
-          <span className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-line/70 px-2.5 py-1 text-[11px] font-medium text-muted">
+        <div className="relative flex min-h-0 flex-1 flex-col items-center pt-4 pb-3">
+          <span className="mb-3 shrink-0 rounded-full bg-line/70 px-2.5 py-1 text-[11px] font-medium text-muted">
             Web preview
           </span>
-          <PhoneFrame viewport={viewport}>
-            {player.webPreviewURL ? (
-              <iframe
-                key={player.epoch}
-                title="Web preview"
-                data-testid="web-preview"
-                ref={(element) => {
-                  player.frameRef.current = element?.contentWindow ?? null;
-                }}
-                src={player.webPreviewURL}
-                allow="geolocation; camera; microphone"
-                className="h-full w-full border-0"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center px-6 text-center text-[13px] text-muted">
-                {snapshotId ? "Loading the preview…" : "Your first build will appear here."}
-              </div>
-            )}
-          </PhoneFrame>
+          <div className="min-h-0 w-full flex-1">
+            <PhoneFrame device={device}>
+              {player.webPreviewURL ? (
+                <iframe
+                  key={player.epoch}
+                  title="Web preview"
+                  data-testid="web-preview"
+                  ref={(element) => {
+                    player.frameRef.current = element?.contentWindow ?? null;
+                  }}
+                  src={player.webPreviewURL}
+                  allow="geolocation; camera; microphone"
+                  className="h-full w-full border-0"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center px-6 text-center text-[13px] text-muted">
+                  {snapshotId ? "Loading the preview…" : "Your first build will appear here."}
+                </div>
+              )}
+            </PhoneFrame>
+          </div>
           <p
             data-testid="preview-snapshot"
             data-snapshot-id={snapshotId ?? ""}
             data-web-status={player.webStatus}
-            className="mt-3 font-mono text-[11px] text-muted"
+            className="mt-3 shrink-0 font-mono text-[11px] text-muted"
           >
             {snapshotId ? `Snapshot ${snapshotId.slice(0, 8)}` : "No preview yet"}
           </p>
@@ -136,6 +172,8 @@ export function PreviewPanel({
     </div>
   );
 }
+
+const DEVICE_STORAGE_KEY = "buildly.previewDevice";
 
 function StatusChip({
   label,

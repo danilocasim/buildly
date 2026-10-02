@@ -95,7 +95,7 @@ Toolbar: back, app icon, editable project name, "Expo + TypeScript" badge, **Ope
 | Chat | User requests, streamed progress, assistant responses, change composer with a subtle "OpenAI" label |
 | Preview / Code | Snack web player inside a phone frame, or read-only file tree with highlighted source |
 
-Preview controls: two viewport presets (a small and a large phone), build status, refresh, and **Reset demo data**. Label the runtime **Web preview**. Presets change dimensions only; they do not emulate a native OS.
+Preview controls: device presets (iPhone models at their real size in points, with the status bar and home indicator in each model's safe area; D24), build status, refresh, and **Reset demo data**. Label the runtime **Web preview**. Presets change dimensions and safe areas only; they do not emulate a native OS.
 
 **Open on phone** shows the Snack QR code and the Expo Go install link, plus a one-line note that the phone must have Expo Go and internet access.
 
